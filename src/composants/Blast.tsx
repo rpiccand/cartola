@@ -13,6 +13,7 @@ import {
   type JeuLocal,
 } from '@/donnees/stockage'
 import { melanger } from './melanger'
+import { Consignes } from './Consignes'
 
 /**
  * Mode blast (arcade).
@@ -581,7 +582,11 @@ export function Blast({
   if (phase === 'attente') {
     return (
       <div className="carte-bloc">
-        <p>{m.blast.intro}</p>
+        {/* La règle du mode vit dans le catalogue des consignes, avec celles
+            des trois autres modes, et non plus dans les messages d'interface :
+            un seul texte, traduit dans la langue de l'élève. Les seuils, eux,
+            restent ci-dessous — calculés depuis `REGLES`, jamais recopiés. */}
+        <Consignes mode="blast" langue={langue} messages={m} />
         {/* Chaque nom ouvre son fragment, jamais mis en minuscules : en
             allemand, « Leben » et « Stufe » s'écrivent avec une majuscule, et
             un `toLowerCase()` sur un message d'interface les rendrait fautifs. */}

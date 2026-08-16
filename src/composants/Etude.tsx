@@ -9,6 +9,7 @@ import { Reviser } from './Reviser'
 import { Apprendre } from './Apprendre'
 import { Associer } from './Associer'
 import { Blast } from './Blast'
+import { Consignes } from './Consignes'
 
 export type Mode = 'reviser' | 'apprendre' | 'associer' | 'blast'
 
@@ -63,6 +64,11 @@ export function Etude({
           {m.jeu.retour}
         </Link>
       </div>
+
+      {/* Le blast affiche sa consigne lui-même, sur son écran d'attente : là,
+          le chronomètre n'a pas démarré et l'élève a le temps de lire. Posée
+          ici, elle occuperait le haut de l'écran pendant toute la série. */}
+      {mode !== 'blast' ? <Consignes mode={mode} langue={langue} messages={m} /> : null}
 
       {mode === 'reviser' ? <Reviser jeu={jeu} langue={langue} messages={m} /> : null}
       {mode === 'apprendre' ? <Apprendre jeu={jeu} langue={langue} messages={m} /> : null}

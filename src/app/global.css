@@ -532,6 +532,94 @@ a:focus-visible {
   }
 }
 
+/* ── Consignes ────────────────────────────────────────────────────────── */
+
+/* Le sélecteur vit dans l'en-tête, à côté des langues d'interface, mais il ne
+   leur ressemble pas : celles-ci sont des liens qui changent l'URL, celui-ci
+   écrit une préférence. La différence de forme dit la différence de nature. */
+.consigne-choix {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.consigne-choix label {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--encre-douce);
+  white-space: nowrap;
+}
+
+/* La hauteur de 44 px des champs ne s'applique pas ici : ce menu vit dans une
+   barre de navigation, pas dans un formulaire, et l'imposer ferait grandir
+   l'en-tête d'un tiers sur un téléphone. Il reste au-dessus des 32 px que
+   demande le pointeur grossier. */
+.consigne-choix select {
+  width: auto;
+  min-height: 34px;
+  padding: 0.2rem 0.4rem;
+  font-size: 0.85rem;
+  max-width: 9.5rem;
+}
+
+.consigne {
+  margin-bottom: 1rem;
+  border: 1px solid var(--trait);
+  border-radius: var(--rayon);
+  background: var(--surface);
+  box-shadow: var(--ombre);
+  overflow: hidden;
+}
+
+.consigne-onglets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem;
+  padding: 0.35rem 0.35rem 0;
+  border-bottom: 1px solid var(--trait);
+  background: var(--fond);
+}
+
+.consigne-onglet {
+  min-height: 36px;
+  padding: 0.3rem 0.75rem;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: var(--rayon-petit) var(--rayon-petit) 0 0;
+  background: transparent;
+  color: var(--encre-douce);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.consigne-onglet:hover {
+  color: var(--encre);
+}
+
+/* L'onglet actif ne se distingue pas que par sa couleur : il porte le fond de
+   la surface et se raccorde au panneau, ce qui reste lisible sans la teinte. */
+.consigne-onglet-actif {
+  background: var(--surface);
+  border-color: var(--trait);
+  color: var(--accent);
+  margin-bottom: -1px;
+  padding-bottom: calc(0.3rem + 1px);
+}
+
+.consigne-texte {
+  padding: 0.8rem 1rem;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.consigne-texte:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
 /* ── Blast ────────────────────────────────────────────────────────────── */
 
 .blast-enonce {

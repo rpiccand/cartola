@@ -6,6 +6,7 @@ import {
   type EtatCarteApprenant,
   type LangueContenu,
 } from '@/domaine'
+import { estLangueConsigne, type LangueConsigne } from '@/i18n/consignes'
 import { JEUX_DEMO } from './demonstration'
 
 /**
@@ -51,6 +52,12 @@ export interface Etat {
   readonly meilleursTemps: Record<string, number>
   /** jeuId → meilleur score du mode blast, en points. */
   readonly meilleursScores: Record<string, number>
+  /**
+   * Deuxième langue des consignes, choisie par l'élève. Absente tant qu'il
+   * n'en a pas choisi : la consigne s'affiche alors dans la seule langue de
+   * l'interface.
+   */
+  readonly langueConsigne?: LangueConsigne
 }
 
 const VIDE: Etat = { version: 1, jeux: [], progression: {}, meilleursTemps: {}, meilleursScores: {} }
@@ -100,6 +107,12 @@ export function lire(): Etat {
       // Absent des états écrits avant le mode blast : un `??` suffit, la
       // version du format n'a pas besoin de bouger pour un champ additif.
       meilleursScores: lu.meilleursScores ?? {},
+      // Revalidé et non simplement recopié : le stockage est modifiable par
+      // l'élève, et un code inconnu ferait planter la lecture des consignes.
+      langueConsigne:
+        typeof lu.langueConsigne === 'string' && estLangueConsigne(lu.langueConsigne)
+          ? lu.langueConsigne
+          : undefined,
     }
   } catch {
     // Un stockage corrompu ne doit jamais empêcher la page de s'afficher.
@@ -213,6 +226,38 @@ export function enregistrerScore(jeuId: string, points: number): void {
   const actuel = etat.meilleursScores[jeuId]
   if (actuel !== undefined && actuel >= points) return
   ecrire({ ...etat, meilleursScores: { ...etat.meilleursScores, [jeuId]: points } })
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Langue des consignes
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * L'en-tête et la page d'étude sont deux arbres React distincts : le sélecteur
+ * ne peut donc pas descendre le choix par une propriété. Un événement sur
+ * `window` les relie, et `storage` couvre le cas de deux onglets ouverts sur
+ * le même appareil — un élève qui change de langue dans l'un la voit changer
+ * dans l'autre.
+ */
+const EVENEMENT_CONSIGNE = 'cartula:langue-consigne'
+
+export function langueConsigne(): LangueConsigne | undefined {
+  return lire().langueConsigne
+}
+
+export function definirLangueConsigne(langue: LangueConsigne | undefined): void {
+  ecrire({ ...lire(), langueConsigne: langue })
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event(EVENEMENT_CONSIGNE))
+}
+
+export function abonnerLangueConsigne(reagir: () => void): () => void {
+  if (typeof window === 'undefined') return () => {}
+  window.addEventListener(EVENEMENT_CONSIGNE, reagir)
+  window.addEventListener('storage', reagir)
+  return () => {
+    window.removeEventListener(EVENEMENT_CONSIGNE, reagir)
+    window.removeEventListener('storage', reagir)
+  }
 }
 
 export interface Compteurs {

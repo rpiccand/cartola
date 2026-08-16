@@ -159,9 +159,15 @@ export function Apprendre({
       <Jauge compteurs={compteurs} />
 
       <div className="carte-bloc" style={{ marginTop: '1rem' }}>
-        <p className="tres-petit doux" style={{ marginBottom: '0.25rem' }}>
-          {q.genre === 'choix' ? m.jeu.associerDesc : m.etude.votreReponse}
-        </p>
+        {/* Rien au-dessus d'un choix multiple : ce libellé affichait
+            `m.jeu.associerDesc`, soit « Relier les paires contre le
+            chronomètre » — la description d'un AUTRE mode, et une consigne
+            fausse posée juste sous la vraie. */}
+        {q.genre === 'saisie' ? (
+          <p className="tres-petit doux" style={{ marginBottom: '0.25rem' }}>
+            {m.etude.votreReponse}
+          </p>
+        ) : null}
         <p
           lang={jeu.langueRecto}
           style={{ fontSize: '1.4rem', fontWeight: 600, marginBottom: '1rem' }}

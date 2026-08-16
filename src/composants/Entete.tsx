@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LANGUES_INTERFACE, type LangueInterface } from '@/domaine'
 import { MESSAGES, type Messages } from '@/i18n/messages'
+import { SelecteurConsigne } from './SelecteurConsigne'
 
 const ONGLETS = [
   { chemin: '', cle: 'accueil' },
@@ -35,6 +36,8 @@ export function Entete({ langue, messages }: { langue: LangueInterface; messages
             )
           })}
         </nav>
+
+        <SelecteurConsigne messages={messages} />
 
         <div className="langues" role="group" aria-label={messages.langue.changer}>
           {LANGUES_INTERFACE.map((l) => (

@@ -55,7 +55,6 @@ export interface Messages {
     retour: string
   }
   blast: {
-    intro: string
     demarrer: string
     niveau: string
     score: string
@@ -102,6 +101,7 @@ export interface Messages {
     concordance: string
     voirCas: string
   }
+  consignes: { titre: string; langue: string; aucune: string }
   appareil: { titre: string; intro: string; dansLaCible: string; horsCible: string; detail: string }
   audio: { titre: string; texte: string }
 }
@@ -153,8 +153,6 @@ const FR: Messages = {
     retour: 'Retour',
   },
   blast: {
-    intro:
-      "Vingt secondes pour placer le plus de réponses possible. Cinq bulles flottent et rebondissent l'une sur l'autre, le mot à traduire s'affiche en haut, l'arrosoir suit votre souris : cliquez sur la bulle qui répond, une goutte part l'éclater. Juste, elle cède la place à un mot neuf ; les autres restent, et la question suivante porte sur l'une d'elles. Faux, la bulle vire au rouge, coûte une vie, et vous rejouez sur la même question jusqu'à trouver. Trois vies.",
     demarrer: 'Démarrer',
     niveau: 'Niveau',
     score: 'Score',
@@ -202,6 +200,7 @@ const FR: Messages = {
     concordance: 'de concordance',
     voirCas: 'Voir tous les cas',
   },
+  consignes: { titre: 'Consigne', langue: 'Consigne en', aucune: 'Langue de l’application' },
   appareil: {
     titre: 'Cet appareil passe-t-il la cible ?',
     intro:
@@ -263,8 +262,6 @@ const DE: Messages = {
     retour: 'Zurueck',
   },
   blast: {
-    intro:
-      'Zwanzig Sekunden fuer moeglichst viele Treffer. Fuenf Blasen schweben und prallen voneinander ab, das Wort steht oben, die Giesskanne folgt Ihrer Maus: Klicken Sie auf die Blase, die passt, ein Tropfen laesst sie zerplatzen. Richtig, sie macht einem neuen Wort Platz; die anderen bleiben, und die naechste Frage betrifft eine davon. Falsch, die Blase wird rot, kostet ein Leben, und Sie spielen dieselbe Frage weiter, bis Sie die richtige finden. Drei Leben.',
     demarrer: 'Starten',
     niveau: 'Stufe',
     score: 'Punkte',
@@ -312,6 +309,7 @@ const DE: Messages = {
     concordance: 'Uebereinstimmung',
     voirCas: 'Alle Faelle anzeigen',
   },
+  consignes: { titre: 'Anleitung', langue: 'Anleitung auf', aucune: 'Sprache der App' },
   appareil: {
     titre: 'Erfuellt dieses Geraet die Zielvorgabe?',
     intro:
@@ -373,8 +371,6 @@ const IT: Messages = {
     retour: 'Indietro',
   },
   blast: {
-    intro:
-      "Venti secondi per piazzare più risposte possibile. Cinque bolle fluttuano e rimbalzano una sull'altra, la parola da tradurre appare in alto, l'annaffiatoio segue il vostro mouse: cliccate sulla bolla che risponde, una goccia la fa scoppiare. Giusta, lascia il posto a una parola nuova; le altre restano, e la domanda seguente riguarda una di loro. Sbagliata, la bolla diventa rossa, costa una vita, e riprovate sulla stessa domanda finché non la trovate. Tre vite.",
     demarrer: 'Iniziare',
     niveau: 'Livello',
     score: 'Punteggio',
@@ -422,6 +418,7 @@ const IT: Messages = {
     concordance: 'di concordanza',
     voirCas: 'Vedere tutti i casi',
   },
+  consignes: { titre: 'Istruzioni', langue: 'Istruzioni in', aucune: 'Lingua dell’applicazione' },
   appareil: {
     titre: 'Questo dispositivo rientra nell’obiettivo?',
     intro:
