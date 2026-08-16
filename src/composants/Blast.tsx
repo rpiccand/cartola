@@ -43,7 +43,7 @@ import { melanger } from './melanger'
  * précisément la cible annoncée.
  */
 
-type Phase = 'attente' | 'visee' | 'tir' | 'verdict' | 'termine'
+type Phase = 'attente' | 'visee' | 'tir' | 'rate' | 'verdict' | 'termine'
 
 interface Bulle {
   readonly cle: string
@@ -63,8 +63,26 @@ const ZONE_CANON = 64
 const VOL_MS = 260
 /** Durée d'affichage du verdict avant la question suivante. */
 const VERDICT_MS = 900
-/** Le canon repose à plat quand il ne vise rien. */
+/** Le canon repose à la verticale quand il ne vise rien. */
 const ANGLE_REPOS = 0
+/** Butée de rotation du fût, en degrés de part et d'autre de la verticale. */
+const ANGLE_MAXIMUM = 82
+/** Pause d'un essai raté avant de rendre la main, en millisecondes. */
+const RATE_MS = 550
+
+/**
+ * Angle du fût pour viser un point de l'arène, mesuré depuis la verticale et
+ * dans le sens horaire — c'est ainsi que le fût est dessiné, pointe en haut.
+ *
+ * La butée empêche le canon de se retourner vers le bas quand le pointeur
+ * passe sous sa bouche : un canon pointé vers le sol tirerait vers le hors-jeu.
+ */
+function angleVers(arene: HTMLDivElement, cibleX: number, cibleY: number): number {
+  const departX = arene.clientWidth / 2
+  const departY = arene.clientHeight - ZONE_CANON / 2
+  const brut = (Math.atan2(cibleX - departX, departY - cibleY) * 180) / Math.PI
+  return Math.min(ANGLE_MAXIMUM, Math.max(-ANGLE_MAXIMUM, brut))
+}
 
 function vitesse(niveau: number): number {
   return Math.min(
@@ -112,7 +130,8 @@ export function Blast({
   const [phase, setPhase] = useState<Phase>('attente')
   const [carte, setCarte] = useState<CarteLocale | null>(null)
   const [bulles, setBulles] = useState<readonly Bulle[]>([])
-  const [touchee, setTouchee] = useState<string | null>(null)
+  /** Bulles fausses déjà crevées sur la question en cours. */
+  const [eclatees, setEclatees] = useState<readonly string[]>([])
   const [score, setScore] = useState(0)
   const [reussies, setReussies] = useState(0)
   // `REGLES` est figé par `as const` : sans annotation, l'état serait typé au
@@ -129,6 +148,15 @@ export function Blast({
   const refBulles = useRef(new Map<string, HTMLButtonElement>())
   /** Position vivante des bulles, hors React : la boucle d'animation écrit ici. */
   const etatBulles = useRef<Bulle[]>([])
+  /**
+   * La question a-t-elle déjà été jugée ?
+   *
+   * Depuis qu'un essai raté laisse rejouer, une carte finit toujours par être
+   * trouvée. Seul le PREMIER essai est enregistré : sans cela, il suffirait de
+   * crever les bulles une à une pour qu'une carte inconnue soit consignée
+   * correcte, et la progression mentirait.
+   */
+  const premierEssaiFait = useRef(false)
 
   const niveau = Math.floor(reussies / REGLES.BLAST_CARTES_PAR_NIVEAU) + 1
 
@@ -174,15 +202,18 @@ export function Blast({
 
     etatBulles.current = neuves
     refBulles.current.clear()
+    premierEssaiFait.current = false
     setCarte(suivante)
     setBulles(neuves)
-    setTouchee(null)
+    setEclatees([])
     setPhase('visee')
   }, [jeu, reussies])
 
   // ── Placement initial, une fois les bulles mesurables ────────────────────
+  // Dépend des bulles et NON de la phase : une erreur ramène en « visée », et
+  // sur `phase` cet effet redistribuerait les bulles au hasard à chaque essai
+  // raté — le joueur perdrait de vue celles qu'il vient d'éliminer.
   useEffect(() => {
-    if (phase !== 'visee') return
     const arene = refArene.current
     if (arene === null) return
     // Le canon repart à la verticale à chaque question : laissé pointé sur la
@@ -206,7 +237,40 @@ export function Blast({
       b.y = ligne * (hauteur / 2) + Math.random() * caseH
       el.style.transform = `translate(${b.x.toFixed(1)}px, ${b.y.toFixed(1)}px)`
     })
-  }, [phase, bulles])
+  }, [bulles])
+
+  // ── Le canon suit le pointeur ────────────────────────────────────────────
+  // L'angle est écrit directement dans le style, coalescé par
+  // `requestAnimationFrame` : un `pointermove` peut arriver bien plus souvent
+  // qu'une image, et un rendu React par mouvement de souris achèverait les
+  // téléphones les plus anciens du parc.
+  useEffect(() => {
+    if (phase === 'attente' || phase === 'termine') return
+    const arene = refArene.current
+    if (arene === null) return
+
+    let vise: { x: number; y: number } | null = null
+    let image = 0
+
+    const appliquer = () => {
+      image = 0
+      const canon = refCanon.current
+      if (canon === null || vise === null) return
+      canon.style.transform = `rotate(${angleVers(arene, vise.x, vise.y).toFixed(1)}deg)`
+    }
+
+    const suivre = (e: PointerEvent) => {
+      const cadre = arene.getBoundingClientRect()
+      vise = { x: e.clientX - cadre.left, y: e.clientY - cadre.top }
+      if (image === 0) image = requestAnimationFrame(appliquer)
+    }
+
+    arene.addEventListener('pointermove', suivre)
+    return () => {
+      arene.removeEventListener('pointermove', suivre)
+      if (image !== 0) cancelAnimationFrame(image)
+    }
+  }, [phase])
 
   // ── Rotation de l'écran ──────────────────────────────────────────────────
   // En mouvement normal, la boucle d'animation raccroche les bulles au cadre
@@ -286,45 +350,49 @@ export function Blast({
   }, [phase, bulles, reduit])
 
   const conclure = useCallback(
-    (correcte: boolean) => {
-      if (carte !== null) {
+    (b: Bulle) => {
+      if (carte !== null && !premierEssaiFait.current) {
+        premierEssaiFait.current = true
         // Reconnaissance, jamais rappel libre : voir le parti pris 1 en tête
         // de fichier. C'est le domaine qui refuse la maîtrise, pas cet appel.
-        enregistrerReponse(jeu.id, carte.id, correcte, false)
+        enregistrerReponse(jeu.id, carte.id, b.correcte, false)
       }
-      if (correcte) {
+      if (b.correcte) {
         setScore((s) => s + REGLES.BLAST_POINTS_PAR_CARTE * niveau)
         setReussies((n) => n + 1)
-      } else {
-        setVies((v) => v - 1)
+        setPhase('verdict')
+        return
       }
-      setPhase('verdict')
+      // La bulle fausse reste crevée et la question continue : c'est le seul
+      // moyen d'arriver à voir la bonne réponse, puisque rien ne la révèle.
+      setEclatees((e) => [...e, b.cle])
+      setVies((v) => v - 1)
+      setPhase('rate')
     },
     [carte, jeu, niveau],
   )
 
   function tirer(b: Bulle) {
-    if (phase !== 'visee') return
+    if (phase !== 'visee' || eclatees.includes(b.cle)) return
     const arene = refArene.current
     const canon = refCanon.current
     const boulet = refBoulet.current
     if (arene === null) return
 
-    setTouchee(b.cle)
-
     // Le canon vise le centre de la bulle depuis la bouche, au bas de l'arène.
+    // Le pointeur y est déjà, mais le viser explicitement couvre le tactile,
+    // où aucun `pointermove` ne précède le tir.
     const vivante = etatBulles.current.find((x) => x.cle === b.cle) ?? b
     const departX = arene.clientWidth / 2
     const departY = arene.clientHeight - ZONE_CANON / 2
     const cibleX = vivante.x + vivante.largeur / 2
     const cibleY = vivante.y + vivante.hauteur / 2
-    // L'angle est mesuré depuis la verticale, sens horaire : c'est ainsi que
-    // le fût est dessiné, pointe vers le haut au repos.
-    const angle = (Math.atan2(cibleX - departX, departY - cibleY) * 180) / Math.PI
-    if (canon !== null) canon.style.transform = `rotate(${angle.toFixed(1)}deg)`
+    if (canon !== null) {
+      canon.style.transform = `rotate(${angleVers(arene, cibleX, cibleY).toFixed(1)}deg)`
+    }
 
     if (reduit || boulet === null) {
-      conclure(vivante.correcte)
+      conclure(vivante)
       return
     }
 
@@ -343,25 +411,36 @@ export function Blast({
         return
       }
       boulet.style.opacity = '0'
-      conclure(vivante.correcte)
+      conclure(vivante)
     }
     requestAnimationFrame(voler)
   }
 
-  // ── Entre deux questions ─────────────────────────────────────────────────
+  const terminer = useCallback(() => {
+    enregistrerScore(jeu.id, score)
+    setRecord(meilleurScore(jeu.id))
+    setPhase('termine')
+  }, [jeu, score])
+
+  // ── Après une bonne réponse : question suivante ──────────────────────────
   useEffect(() => {
     if (phase !== 'verdict') return
+    const id = window.setTimeout(lancerQuestion, VERDICT_MS)
+    return () => window.clearTimeout(id)
+  }, [phase, lancerQuestion])
+
+  // ── Après un essai raté : on rend la main sur la MÊME question ───────────
+  useEffect(() => {
+    if (phase !== 'rate') return
     const id = window.setTimeout(() => {
       if (vies <= 0) {
-        enregistrerScore(jeu.id, score)
-        setRecord(meilleurScore(jeu.id))
-        setPhase('termine')
+        terminer()
         return
       }
-      lancerQuestion()
-    }, VERDICT_MS)
+      setPhase('visee')
+    }, RATE_MS)
     return () => window.clearTimeout(id)
-  }, [phase, vies, score, jeu, lancerQuestion])
+  }, [phase, vies, terminer])
 
   function demarrer() {
     file.current = fileDeCartes(jeu)
@@ -467,21 +546,19 @@ export function Blast({
 
       <div className="blast-arene" ref={refArene}>
         {bulles.map((b) => {
+          // Une bulle fausse reste rouge et hors jeu jusqu'à la question
+          // suivante : c'est la trace de ce qui a déjà été éliminé.
+          const crevee = eclatees.includes(b.cle)
           let classe = 'blast-bulle'
-          if (verdictRendu) {
-            // Sur une erreur, la bonne bulle éclate en vert en même temps que
-            // la mauvaise vire au rouge : perdre une vie sans voir la réponse
-            // n'apprend rien.
-            if (b.correcte) classe = 'blast-bulle blast-bulle-juste'
-            else if (b.cle === touchee) classe = 'blast-bulle blast-bulle-fausse'
-          }
+          if (crevee) classe = 'blast-bulle blast-bulle-fausse'
+          else if (verdictRendu && b.correcte) classe = 'blast-bulle blast-bulle-juste'
           return (
             <button
               key={b.cle}
               type="button"
               className={classe}
               lang={jeu.langueVerso}
-              disabled={phase !== 'visee'}
+              disabled={crevee || phase !== 'visee'}
               ref={(el) => {
                 if (el === null) refBulles.current.delete(b.cle)
                 else refBulles.current.set(b.cle, el)

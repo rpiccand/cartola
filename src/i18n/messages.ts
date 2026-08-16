@@ -154,7 +154,7 @@ const FR: Messages = {
   },
   blast: {
     intro:
-      "Le mot à traduire s'affiche en haut. Quatre bulles flottent en dessous : cliquez sur celle qui porte la bonne traduction, le canon tire dessus. Juste, elle éclate en vert et rapporte des points ; faux, elle vire au rouge et coûte une vie. Trois vies, et les bulles accélèrent.",
+      "Le mot à traduire s'affiche en haut. Quatre bulles flottent en dessous et le canon suit votre souris : cliquez sur celle qui porte la bonne traduction, il tire dessus. Juste, elle éclate en vert et rapporte des points. Faux, elle vire au rouge, coûte une vie, et vous rejouez sur la même question jusqu'à trouver. Trois vies, et les bulles accélèrent.",
     demarrer: 'Démarrer',
     niveau: 'Niveau',
     score: 'Score',
@@ -264,7 +264,7 @@ const DE: Messages = {
   },
   blast: {
     intro:
-      'Das Wort steht oben. Darunter schweben vier Blasen: Klicken Sie auf die mit der richtigen Uebersetzung, die Kanone schiesst darauf. Richtig, sie platzt gruen und bringt Punkte; falsch, sie wird rot und kostet ein Leben. Drei Leben, und die Blasen werden schneller.',
+      'Das Wort steht oben. Darunter schweben vier Blasen, und die Kanone folgt Ihrer Maus: Klicken Sie auf die mit der richtigen Uebersetzung, sie schiesst darauf. Richtig, die Blase platzt gruen und bringt Punkte. Falsch, sie wird rot, kostet ein Leben, und Sie spielen dieselbe Frage weiter, bis Sie die richtige finden. Drei Leben, und die Blasen werden schneller.',
     demarrer: 'Starten',
     niveau: 'Stufe',
     score: 'Punkte',
@@ -374,7 +374,7 @@ const IT: Messages = {
   },
   blast: {
     intro:
-      'La parola da tradurre appare in alto. Sotto fluttuano quattro bolle: cliccate su quella con la traduzione giusta, il cannone le spara addosso. Giusta, scoppia in verde e vale punti; sbagliata, diventa rossa e costa una vita. Tre vite, e le bolle accelerano.',
+      'La parola da tradurre appare in alto. Sotto fluttuano quattro bolle e il cannone segue il vostro mouse: cliccate su quella con la traduzione giusta, il cannone le spara addosso. Giusta, scoppia in verde e vale punti. Sbagliata, diventa rossa, costa una vita, e riprovate sulla stessa domanda finché non la trovate. Tre vite, e le bolle accelerano.',
     demarrer: 'Iniziare',
     niveau: 'Livello',
     score: 'Punteggio',
