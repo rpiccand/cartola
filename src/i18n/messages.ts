@@ -61,9 +61,10 @@ export interface Messages {
     score: string
     meilleurScore: string
     vies: string
-    detruites: string
-    echappee: string
+    reussies: string
     partieTerminee: string
+    /** Nom accessible du canon, annoncé aux lecteurs d'écran. */
+    canon: string
   }
   etude: {
     jeSais: string
@@ -146,22 +147,22 @@ const FR: Messages = {
     associer: 'Association',
     associerDesc: 'Relier les paires contre le chronomètre',
     blast: 'Blast',
-    blastDesc: 'Écrire la traduction avant que la carte ne touche le sol',
+    blastDesc: 'Tirer sur la bulle qui porte la bonne traduction',
     maitrise: 'Maîtrise',
     reinitialiser: 'Réinitialiser la progression',
     retour: 'Retour',
   },
   blast: {
     intro:
-      "Les cartes tombent. Tapez la traduction avant qu'elles n'atteignent la ligne. Une réponse refusée ne coûte rien : la carte continue de tomber, vous pouvez vous reprendre. Trois vies, et ça accélère.",
+      "Le mot à traduire s'affiche en haut. Quatre bulles flottent en dessous : cliquez sur celle qui porte la bonne traduction, le canon tire dessus. Juste, elle éclate en vert et rapporte des points ; faux, elle vire au rouge et coûte une vie. Trois vies, et les bulles accélèrent.",
     demarrer: 'Démarrer',
     niveau: 'Niveau',
     score: 'Score',
     meilleurScore: 'Meilleur score',
     vies: 'Vies',
-    detruites: 'cartes détruites',
-    echappee: 'Échappée',
+    reussies: 'bonnes réponses',
     partieTerminee: 'Partie terminée',
+    canon: 'Canon',
   },
   etude: {
     jeSais: 'Je sais',
@@ -256,22 +257,22 @@ const DE: Messages = {
     associer: 'Zuordnen',
     associerDesc: 'Paare gegen die Uhr verbinden',
     blast: 'Blast',
-    blastDesc: 'Die Uebersetzung tippen, bevor die Karte den Boden trifft',
+    blastDesc: 'Auf die Blase mit der richtigen Uebersetzung schiessen',
     maitrise: 'Beherrschung',
     reinitialiser: 'Fortschritt zuruecksetzen',
     retour: 'Zurueck',
   },
   blast: {
     intro:
-      'Die Karten fallen. Tippen Sie die Uebersetzung, bevor sie die Linie erreichen. Eine abgelehnte Antwort kostet nichts: die Karte faellt weiter, Sie koennen es nochmals versuchen. Drei Leben, und es wird schneller.',
+      'Das Wort steht oben. Darunter schweben vier Blasen: Klicken Sie auf die mit der richtigen Uebersetzung, die Kanone schiesst darauf. Richtig, sie platzt gruen und bringt Punkte; falsch, sie wird rot und kostet ein Leben. Drei Leben, und die Blasen werden schneller.',
     demarrer: 'Starten',
     niveau: 'Stufe',
     score: 'Punkte',
     meilleurScore: 'Bestwert',
     vies: 'Leben',
-    detruites: 'Karten getroffen',
-    echappee: 'Entwischt',
+    reussies: 'richtige Antworten',
     partieTerminee: 'Spiel vorbei',
+    canon: 'Kanone',
   },
   etude: {
     jeSais: 'Weiss ich',
@@ -366,22 +367,22 @@ const IT: Messages = {
     associer: 'Abbinamento',
     associerDesc: 'Collegare le coppie contro il tempo',
     blast: 'Blast',
-    blastDesc: 'Scrivere la traduzione prima che la carta tocchi terra',
+    blastDesc: 'Sparare alla bolla con la traduzione giusta',
     maitrise: 'Padronanza',
     reinitialiser: 'Azzerare i progressi',
     retour: 'Indietro',
   },
   blast: {
     intro:
-      'Le carte cadono. Digitate la traduzione prima che raggiungano la linea. Una risposta rifiutata non costa nulla: la carta continua a cadere e potete riprovare. Tre vite, e la velocità aumenta.',
+      'La parola da tradurre appare in alto. Sotto fluttuano quattro bolle: cliccate su quella con la traduzione giusta, il cannone le spara addosso. Giusta, scoppia in verde e vale punti; sbagliata, diventa rossa e costa una vita. Tre vite, e le bolle accelerano.',
     demarrer: 'Iniziare',
     niveau: 'Livello',
     score: 'Punteggio',
     meilleurScore: 'Miglior punteggio',
     vies: 'Vite',
-    detruites: 'carte colpite',
-    echappee: 'Sfuggita',
+    reussies: 'risposte corrette',
     partieTerminee: 'Partita finita',
+    canon: 'Cannone',
   },
   etude: {
     jeSais: 'Lo so',

@@ -20,25 +20,27 @@ export const REGLES = {
   /** EF-P.12 — taille d'une manche d'apprentissage adaptatif. */
   ITEMS_PAR_MANCHE: 7,
   /**
-   * Mode blast (arcade). Ces sept seuils sont nés de la vitrine et n'ont pas
+   * Mode blast (arcade). Ces huit seuils sont nés de la vitrine et n'ont pas
    * encore de numéro d'exigence : ils doivent être portés au cahier des
    * charges, et à `packages/domain/src/regles.ts` du dépôt principal, avant la
    * prochaine exécution de `scripts/sync-domaine.mjs` — sans quoi ils seront
    * écrasés et le mode blast cessera de compiler.
    */
-  /** Cartes minimum pour lancer une partie : en deçà, la file se répète trop vite. */
+  /** Bulles proposées par question, dont une seule porte la bonne réponse. */
+  BLAST_OPTIONS_PAR_QUESTION: 4,
+  /** Cartes minimum pour lancer une partie : il en faut une par bulle. */
   CARTES_MINIMUM_BLAST: 4,
   /** Vies d'une partie. */
   BLAST_VIES: 3,
-  /** Durée de chute d'une carte au niveau 1, en millisecondes. */
-  BLAST_CHUTE_INITIALE_MS: 9000,
-  /** Retranché à la durée de chute à chaque niveau franchi. */
-  BLAST_ACCELERATION_MS: 900,
-  /** Plancher de durée de chute : en deçà, plus personne ne tape assez vite. */
-  BLAST_CHUTE_MINIMUM_MS: 3500,
-  /** Cartes détruites pour franchir un niveau. */
+  /** Vitesse d'une bulle au niveau 1, en pixels par seconde. */
+  BLAST_VITESSE_INITIALE_PX_S: 34,
+  /** Ajouté à la vitesse des bulles à chaque niveau franchi. */
+  BLAST_ACCELERATION_PX_S: 10,
+  /** Plafond de vitesse : au-delà, viser relève du hasard et non de la mémoire. */
+  BLAST_VITESSE_MAXIMUM_PX_S: 110,
+  /** Bonnes réponses pour franchir un niveau. */
   BLAST_CARTES_PAR_NIVEAU: 5,
-  /** Points d'une carte détruite, multipliés par le niveau courant. */
+  /** Points d'une bulle touchée juste, multipliés par le niveau courant. */
   BLAST_POINTS_PAR_CARTE: 10,
   /** ET-P.13 — participants simultanés soutenus par une session collective. */
   PARTICIPANTS_MAX_SESSION_LIVE: 35,

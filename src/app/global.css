@@ -534,78 +534,125 @@ a:focus-visible {
 
 /* ── Blast ────────────────────────────────────────────────────────────── */
 
-/* Hauteur bornée en rem d'abord : sur un téléphone, le clavier logiciel mange
-   la moitié de la hauteur visible, et un ciel exprimé en vh seul deviendrait
-   une bande de deux centimètres au moment précis où l'élève tape. */
-.blast-ciel {
-  position: relative;
-  overflow: hidden;
-  height: clamp(9rem, 28vh, 14rem);
+.blast-enonce {
+  margin-top: 0.75rem;
+  padding: 0.7rem 0.9rem;
   border: 1px solid var(--trait);
   border-radius: var(--rayon);
-  background: linear-gradient(180deg, var(--surface), var(--fond));
-  box-shadow: var(--ombre);
-  margin-bottom: 0.5rem;
-}
-
-.blast-meteore {
-  position: absolute;
-  top: 0.5rem;
-  left: 0;
-  right: 0;
-  display: flex;
-  justify-content: center;
-  padding: 0 0.5rem;
-  will-change: transform;
-}
-
-.blast-bloc {
-  max-width: 100%;
-  padding: 0.55rem 0.9rem;
-  border: 1px solid var(--trait-fort);
-  border-radius: var(--rayon-petit);
   background: var(--surface);
   box-shadow: var(--ombre);
-  font-size: clamp(1.05rem, 0.9rem + 1vw, 1.4rem);
-  font-weight: 650;
-  line-height: 1.25;
   text-align: center;
 }
 
-.blast-bloc-touche {
+.blast-mot {
+  margin: 0;
+  font-size: clamp(1.3rem, 1.05rem + 1.4vw, 1.9rem);
+  font-weight: 650;
+  line-height: 1.2;
+}
+
+/* Hauteur bornée en rem d'abord : exprimée en vh seule, l'arène deviendrait
+   une bande de deux centimètres sur un téléphone tenu à l'horizontale. */
+.blast-arene {
+  position: relative;
+  overflow: hidden;
+  height: clamp(15rem, 46vh, 24rem);
+  margin-top: 0.5rem;
+  border: 1px solid var(--trait);
+  border-radius: var(--rayon);
+  background: linear-gradient(180deg, var(--accent-fond), var(--surface));
+  box-shadow: var(--ombre);
+  touch-action: manipulation;
+}
+
+/* Positionnées par `transform` depuis la boucle d'animation, jamais par
+   `left`/`top` : seul `transform` est composité, et c'est ce qui garde
+   quatre bulles fluides sur un téléphone de six ans. */
+.blast-bulle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  max-width: 46%;
+  min-height: 44px;
+  padding: 0.5rem 0.85rem;
+  border: 1px solid var(--trait-fort);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--encre);
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 550;
+  line-height: 1.25;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: var(--ombre);
+  will-change: transform;
+}
+
+/* La couleur ne porte jamais seule : la bulle juste s'épaissit, la fausse
+   passe en barré — un daltonien lit le verdict sans la teinte. */
+.blast-bulle-juste {
   border-color: var(--vert);
+  border-width: 2px;
   background: var(--vert-fond);
   color: var(--vert);
+  font-weight: 700;
 }
 
-.blast-bloc-rate {
+.blast-bulle-fausse {
   border-color: var(--rouge);
+  border-width: 2px;
   background: var(--rouge-fond);
   color: var(--rouge);
+  text-decoration: line-through;
 }
 
-.blast-sol {
+.blast-boulet {
   position: absolute;
+  top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
-  height: 3px;
-  background: var(--trait-fort);
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border-radius: 999px;
+  background: var(--encre);
+  opacity: 0;
+  will-change: transform;
 }
 
-.blast-sol-touche {
-  background: var(--rouge);
-}
-
-/* Mouvement réduit : la carte ne tombe pas, c'est cette jauge qui porte le
-   temps restant. Posée par-dessus le sol, donc déclarée après lui. */
-.blast-compte {
+.blast-canon {
   position: absolute;
-  left: 0;
+  left: 50%;
+  bottom: 0.5rem;
+  width: 56px;
+  height: 52px;
+  margin-left: -28px;
+  pointer-events: none;
+}
+
+/* Le fût pivote autour de sa base, pointe en haut au repos : c'est ce qui
+   permet au composant de poser un angle mesuré depuis la verticale. */
+.blast-canon-fut {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  width: 14px;
+  height: 34px;
+  margin-left: -7px;
+  border-radius: 7px 7px 3px 3px;
+  background: var(--encre-douce);
+  transform-origin: 50% 100%;
+}
+
+.blast-canon-socle {
+  position: absolute;
+  left: 50%;
   bottom: 0;
-  width: 0;
-  height: 3px;
-  background: var(--ambre);
+  width: 44px;
+  height: 20px;
+  margin-left: -22px;
+  border-radius: 22px 22px var(--rayon-petit) var(--rayon-petit);
+  background: var(--encre);
 }
 
 .blast-vies {
@@ -624,20 +671,6 @@ a:focus-visible {
 
 .blast-vie-perdue {
   background: var(--trait);
-}
-
-/* `input.` et non `.` seul : `input[type='text']` pose déjà la bordure avec
-   une spécificité qu'une classe nue ne battrait pas.
-   Le champ garde le focus pendant toute la partie : une bordure rouge seule
-   passerait sous le liseré de focus et le refus serait invisible. D'où le
-   fond teinté, et le liseré de focus lui-même recoloré. */
-input.champ-refuse {
-  border-color: var(--rouge);
-  background: var(--rouge-fond);
-}
-
-input.champ-refuse:focus {
-  outline-color: var(--rouge);
 }
 
 /* ── Tableaux ─────────────────────────────────────────────────────────── */
@@ -695,5 +728,16 @@ th {
   .face,
   .tuile {
     transition: background-color 120ms ease, border-color 120ms ease;
+  }
+
+  /* `transform` est exclu de la transition : la boucle d'animation le réécrit
+     à chaque image, et une transition dessus ferait traîner les bulles d'un
+     cran derrière leur position réelle — le boulet manquerait sa cible. */
+  .blast-bulle {
+    transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+  }
+
+  .blast-canon-fut {
+    transition: transform 160ms ease-out;
   }
 }
