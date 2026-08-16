@@ -554,6 +554,9 @@ a:focus-visible {
 /* Hauteur bornée en rem d'abord : exprimée en vh seule, l'arène deviendrait
    une bande de deux centimètres sur un téléphone tenu à l'horizontale. */
 .blast-arene {
+  /* Diamètre commun à toutes les bulles. Déclaré ici et non sur `.blast-bulle`
+     pour que le composant puisse le lire par `offsetWidth` sans le connaître. */
+  --bulle: clamp(5.5rem, 21vw, 8rem);
   position: relative;
   overflow: hidden;
   height: clamp(15rem, 46vh, 24rem);
@@ -572,21 +575,37 @@ a:focus-visible {
   position: absolute;
   top: 0;
   left: 0;
-  max-width: 46%;
-  min-height: 44px;
-  padding: 0.5rem 0.85rem;
+  width: var(--bulle);
+  height: var(--bulle);
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
   border: 1px solid var(--trait-fort);
   border-radius: 999px;
   background: var(--surface);
   color: var(--encre);
   font: inherit;
-  font-size: 0.95rem;
   font-weight: 550;
-  line-height: 1.25;
-  text-align: center;
   cursor: pointer;
   box-shadow: var(--ombre);
   will-change: transform;
+}
+
+/* Largeur fixe, hauteur libre. Le composant compare `scrollWidth` à
+   `clientWidth` pour le débordement horizontal et `offsetHeight` à la place
+   disponible pour le vertical, puis réduit la police. Une hauteur fixée ici
+   renverrait toujours la même mesure et la boucle ne convergerait jamais.
+   Pas d'`overflow-wrap: anywhere` : il coupe au milieu d'un mot — « la
+   chambr / e » — au lieu de laisser la police céder. La césure douce s'en
+   charge proprement, guidée par le `lang` porté par chaque bulle. */
+.blast-bulle-texte {
+  width: 72%;
+  overflow: hidden;
+  line-height: 1.15;
+  text-align: center;
+  hyphens: auto;
 }
 
 /* La couleur ne porte jamais seule : la bulle juste s'épaissit, la fausse
@@ -653,6 +672,24 @@ a:focus-visible {
   margin-left: -22px;
   border-radius: 22px 22px var(--rayon-petit) var(--rayon-petit);
   background: var(--encre);
+}
+
+.blast-chrono {
+  height: 6px;
+  margin-top: 0.6rem;
+  border-radius: 999px;
+  background: var(--trait);
+  overflow: hidden;
+}
+
+.blast-chrono-reste {
+  width: 100%;
+  height: 100%;
+  background: var(--accent);
+}
+
+.blast-chrono-urgence {
+  background: var(--rouge);
 }
 
 .blast-vies {

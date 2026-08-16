@@ -20,16 +20,18 @@ export const REGLES = {
   /** EF-P.12 — taille d'une manche d'apprentissage adaptatif. */
   ITEMS_PAR_MANCHE: 7,
   /**
-   * Mode blast (arcade). Ces huit seuils sont nés de la vitrine et n'ont pas
+   * Mode blast (arcade). Ces neuf seuils sont nés de la vitrine et n'ont pas
    * encore de numéro d'exigence : ils doivent être portés au cahier des
    * charges, et à `packages/domain/src/regles.ts` du dépôt principal, avant la
    * prochaine exécution de `scripts/sync-domaine.mjs` — sans quoi ils seront
    * écrasés et le mode blast cessera de compiler.
    */
-  /** Bulles proposées par question, dont une seule porte la bonne réponse. */
-  BLAST_OPTIONS_PAR_QUESTION: 4,
+  /** Bulles présentes dans l'arène. Une seule répond à la question posée. */
+  BLAST_BULLES: 5,
   /** Cartes minimum pour lancer une partie : il en faut une par bulle. */
-  CARTES_MINIMUM_BLAST: 4,
+  CARTES_MINIMUM_BLAST: 5,
+  /** Durée d'une série, en millisecondes. Le chronomètre borne la partie. */
+  BLAST_DUREE_SERIE_MS: 20000,
   /** Vies d'une partie. */
   BLAST_VIES: 3,
   /** Vitesse d'une bulle au niveau 1, en pixels par seconde. */

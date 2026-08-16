@@ -17,58 +17,79 @@ import { melanger } from './melanger'
 /**
  * Mode blast (arcade).
  *
- * Le recto s'affiche en haut, quatre bulles flottent en dessous, l'élève
- * clique celle qui porte la bonne traduction et le canon tire dessus.
+ * Cinq bulles de même taille flottent et s'entrechoquent dans l'arène, chacune
+ * portant la traduction d'une carte. Le recto s'affiche en haut, le canon suit
+ * le pointeur, et l'élève tire sur la bulle qui répond. La série dure vingt
+ * secondes.
  *
- * Trois partis pris, tous discutables et tous délibérés :
+ * Quatre partis pris, tous discutables et tous délibérés :
  *
- * 1. **Ce n'est PAS du rappel libre.** Choisir parmi quatre, c'est
- *    reconnaître, pas se souvenir. Les réponses partent donc en
- *    `rappelLibre: false`, exactement comme le choix multiple de
- *    l'apprentissage : le blast fait sortir une carte de « non commencé » et
- *    la ramène « en cours » sur une erreur, mais ne peut jamais accorder la
- *    maîtrise à lui seul. C'est `appliquerReponse` du domaine qui porte cette
- *    règle, pas ce composant.
- * 2. **Une erreur montre la bonne réponse.** La bulle cliquée vire au rouge et
- *    la bonne bulle éclate en vert au même instant : sans cela, l'élève paie
- *    une vie sans rien apprendre du tour qu'il vient de perdre.
- * 3. **Le mouvement réduit n'est pas un mouvement lent.** Sous
- *    `prefers-reduced-motion`, les bulles ne bougent pas, le boulet ne
- *    voyage pas, et le jeu reste entièrement jouable — seul le flash de
- *    couleur, qui porte le verdict, est conservé.
+ * 1. **Ce n'est PAS du rappel libre.** Choisir parmi cinq, c'est reconnaître,
+ *    pas se souvenir. Les réponses partent en `rappelLibre: false`, comme le
+ *    choix multiple de l'apprentissage : le blast fait progresser une carte
+ *    mais ne peut jamais accorder la maîtrise à lui seul. C'est
+ *    `appliquerReponse` du domaine qui porte cette règle, pas ce composant.
+ * 2. **Seul le premier essai d'une question est enregistré.** Puisqu'on
+ *    rejoue jusqu'à trouver, une carte finit toujours par être touchée : sans
+ *    cette garde, il suffirait de crever les bulles une à une pour qu'une
+ *    carte inconnue soit consignée correcte, et la progression mentirait.
+ * 3. **La bulle fausse reste en jeu.** Elle porte un mot qui servira à une
+ *    question suivante — la crever appauvrirait le vivier. Elle clignote en
+ *    rouge, coûte une vie, et rien de plus.
+ * 4. **Le mouvement réduit n'est pas un mouvement lent.** Sous
+ *    `prefers-reduced-motion`, les bulles ne bougent pas, le boulet ne voyage
+ *    pas — seuls le chronomètre et le flash de couleur, qui portent le jeu,
+ *    sont conservés.
  *
- * L'animation passe par des écritures directes de `style.transform` depuis une
- * boucle `requestAnimationFrame`, jamais par un état React : soixante rendus
- * par seconde condamneraient les téléphones les plus anciens du parc, qui sont
- * précisément la cible annoncée.
+ * L'animation, le chronomètre et l'angle du canon écrivent directement dans le
+ * DOM, jamais dans un état React : soixante rendus par seconde condamneraient
+ * les téléphones les plus anciens du parc, qui sont la cible annoncée.
  */
 
-type Phase = 'attente' | 'visee' | 'tir' | 'rate' | 'verdict' | 'termine'
+type Phase = 'attente' | 'jeu' | 'termine'
 
 interface Bulle {
   readonly cle: string
-  readonly texte: string
-  readonly correcte: boolean
+  readonly carte: CarteLocale
   x: number
   y: number
   vx: number
   vy: number
-  largeur: number
-  hauteur: number
+  /** Diamètre mesuré, en pixels. Identique pour toutes, d'où les chocs simples. */
+  taille: number
+  /** Fausse tant que la bulle n'a pas été mesurée et posée dans l'arène. */
+  posee: boolean
 }
 
 /** Hauteur réservée au canon au bas de l'arène, en pixels. */
 const ZONE_CANON = 64
 /** Durée du vol du boulet, en millisecondes. */
-const VOL_MS = 260
-/** Durée d'affichage du verdict avant la question suivante. */
-const VERDICT_MS = 900
+const VOL_MS = 240
+/** Durée du clignotement vert avant le remplacement de la bulle. */
+const FLASH_JUSTE_MS = 380
+/** Durée du clignotement rouge après une erreur. */
+const FLASH_FAUX_MS = 520
 /** Le canon repose à la verticale quand il ne vise rien. */
 const ANGLE_REPOS = 0
 /** Butée de rotation du fût, en degrés de part et d'autre de la verticale. */
 const ANGLE_MAXIMUM = 82
-/** Pause d'un essai raté avant de rendre la main, en millisecondes. */
-const RATE_MS = 550
+/** Le chronomètre passe en alerte sous ce seuil, en millisecondes. */
+const URGENCE_MS = 5000
+/** Bornes de la taille du texte d'une bulle, en pixels. */
+const TEXTE_MAX = 17
+const TEXTE_MIN = 9
+/**
+ * Part du diamètre laissée au texte. Le carré inscrit dans un cercle mesure
+ * 0,707 fois son diamètre : au-delà, les coins du texte sortiraient du disque.
+ */
+const PART_TEXTE = 0.72
+
+function vitesse(niveau: number): number {
+  return Math.min(
+    REGLES.BLAST_VITESSE_MAXIMUM_PX_S,
+    REGLES.BLAST_VITESSE_INITIALE_PX_S + (niveau - 1) * REGLES.BLAST_ACCELERATION_PX_S,
+  )
+}
 
 /**
  * Angle du fût pour viser un point de l'arène, mesuré depuis la verticale et
@@ -84,17 +105,34 @@ function angleVers(arene: HTMLDivElement, cibleX: number, cibleY: number): numbe
   return Math.min(ANGLE_MAXIMUM, Math.max(-ANGLE_MAXIMUM, brut))
 }
 
-function vitesse(niveau: number): number {
-  return Math.min(
-    REGLES.BLAST_VITESSE_MAXIMUM_PX_S,
-    REGLES.BLAST_VITESSE_INITIALE_PX_S + (niveau - 1) * REGLES.BLAST_ACCELERATION_PX_S,
-  )
+/**
+ * Réduit le texte jusqu'à ce qu'il tienne dans le cercle.
+ *
+ * Toutes les bulles ayant la même taille, c'est le texte qui doit céder : une
+ * bulle dimensionnée par son contenu trahirait la longueur de la réponse, et
+ * « la bibliothèque municipale » se repérerait sans rien connaître du mot.
+ */
+function ajusterTexte(bulle: HTMLElement): void {
+  const texte = bulle.firstElementChild
+  if (!(texte instanceof HTMLElement)) return
+  const dispo = bulle.clientHeight * PART_TEXTE
+  // Deux débordements à surveiller, pas un : la hauteur quand le texte tient
+  // sur trop de lignes, et la largeur quand un seul mot est trop long pour
+  // la bulle. Ne contrôler que la hauteur laissait « la chambre » se faire
+  // couper en deux au lieu de réduire la police.
+  const deborde = () => texte.scrollWidth > texte.clientWidth || texte.offsetHeight > dispo
+  let taille = TEXTE_MAX
+  texte.style.fontSize = `${taille}px`
+  while (taille > TEXTE_MIN && deborde()) {
+    taille -= 1
+    texte.style.fontSize = `${taille}px`
+  }
 }
 
 /**
- * File de la partie : les cartes les moins avancées d'abord, mélangées.
- * Épuisée, elle est reconstruite — une partie n'a pas de fin, seules les vies
- * l'arrêtent.
+ * File des cartes : les moins avancées d'abord, mélangées. C'est elle qui
+ * porte le biais pédagogique — les mots entrent dans l'arène dans cet ordre,
+ * même si la question, elle, se choisit ensuite parmi les bulles présentes.
  */
 function fileDeCartes(jeu: JeuLocal): CarteLocale[] {
   const progression = progressionDe(jeu.id)
@@ -103,18 +141,6 @@ function fileDeCartes(jeu: JeuLocal): CarteLocale[] {
     return e === 'maitrise' ? 2 : e === 'en_cours' ? 1 : 0
   }
   return melanger(jeu.cartes).sort((a, b) => rang(a) - rang(b))
-}
-
-/**
- * Les quatre propositions : la bonne, plus trois leurres pris sur d'autres
- * cartes du même jeu. Des leurres tirés du jeu lui-même sont plausibles, donc
- * discriminants — un leurre absurde ne teste rien.
- */
-function options(jeu: JeuLocal, carte: CarteLocale): { texte: string; correcte: boolean }[] {
-  const leurres = melanger(jeu.cartes.filter((c) => c.id !== carte.id && c.verso !== carte.verso))
-    .slice(0, REGLES.BLAST_OPTIONS_PAR_QUESTION - 1)
-    .map((c) => ({ texte: c.verso, correcte: false }))
-  return melanger([{ texte: carte.verso, correcte: true }, ...leurres])
 }
 
 export function Blast({
@@ -128,10 +154,10 @@ export function Blast({
 }) {
   const m = messages
   const [phase, setPhase] = useState<Phase>('attente')
-  const [carte, setCarte] = useState<CarteLocale | null>(null)
   const [bulles, setBulles] = useState<readonly Bulle[]>([])
-  /** Bulles fausses déjà crevées sur la question en cours. */
-  const [eclatees, setEclatees] = useState<readonly string[]>([])
+  const [carte, setCarte] = useState<CarteLocale | null>(null)
+  const [flash, setFlash] = useState<{ cle: string; juste: boolean } | null>(null)
+  const [enVol, setEnVol] = useState(false)
   const [score, setScore] = useState(0)
   const [reussies, setReussies] = useState(0)
   // `REGLES` est figé par `as const` : sans annotation, l'état serait typé au
@@ -142,27 +168,31 @@ export function Blast({
 
   const file = useRef<CarteLocale[]>([])
   const curseur = useRef(0)
+  const compteurCle = useRef(0)
   const refArene = useRef<HTMLDivElement>(null)
   const refCanon = useRef<HTMLDivElement>(null)
   const refBoulet = useRef<HTMLDivElement>(null)
+  const refChrono = useRef<HTMLDivElement>(null)
+  const refChiffre = useRef<HTMLSpanElement>(null)
   const refBulles = useRef(new Map<string, HTMLButtonElement>())
   /** Position vivante des bulles, hors React : la boucle d'animation écrit ici. */
   const etatBulles = useRef<Bulle[]>([])
-  /**
-   * La question a-t-elle déjà été jugée ?
-   *
-   * Depuis qu'un essai raté laisse rejouer, une carte finit toujours par être
-   * trouvée. Seul le PREMIER essai est enregistré : sans cela, il suffirait de
-   * crever les bulles une à une pour qu'une carte inconnue soit consignée
-   * correcte, et la progression mentirait.
-   */
+  /** La question en cours a-t-elle déjà été jugée ? Voir le parti pris 2. */
   const premierEssaiFait = useRef(false)
+  /** Fin de la série, en temps `performance.now()`. */
+  const finSerie = useRef(0)
+  /** Miroirs du score et des vies, lisibles depuis les minuteries. */
+  const scoreRef = useRef(0)
 
   const niveau = Math.floor(reussies / REGLES.BLAST_CARTES_PAR_NIVEAU) + 1
 
   useEffect(() => {
     setRecord(meilleurScore(jeu.id))
   }, [jeu])
+
+  useEffect(() => {
+    scoreRef.current = score
+  }, [score])
 
   useEffect(() => {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -172,72 +202,156 @@ export function Blast({
     return () => mq.removeEventListener('change', ecouter)
   }, [])
 
-  const lancerQuestion = useCallback(() => {
-    if (jeu.cartes.length === 0) return
-    if (curseur.current >= file.current.length) {
-      file.current = fileDeCartes(jeu)
-      curseur.current = 0
-    }
-    const suivante = file.current[curseur.current]
-    if (suivante === undefined) return
-    curseur.current += 1
+  const terminer = useCallback(() => {
+    enregistrerScore(jeu.id, scoreRef.current)
+    setRecord(meilleurScore(jeu.id))
+    setPhase('termine')
+  }, [jeu])
 
-    const v = vitesse(Math.floor(reussies / REGLES.BLAST_CARTES_PAR_NIVEAU) + 1)
-    const neuves = options(jeu, suivante).map((o, k) => {
-      // Direction initiale répartie sur les quatre diagonales : deux bulles
-      // lancées au même cap se suivraient tout le tour sans jamais se croiser.
-      const angle = (Math.PI / 4) * (1 + 2 * k)
-      return {
-        cle: `${suivante.id}-${k}`,
-        texte: o.texte,
-        correcte: o.correcte,
+  // ── Pioche ───────────────────────────────────────────────────────────────
+  /**
+   * Carte suivante dont le verso n'est pas déjà dans l'arène : deux bulles
+   * portant le même texte rendraient une des deux « fausse » alors qu'elle
+   * répond, ce qui serait indéfendable devant un élève.
+   */
+  const piocher = useCallback(
+    (versosPresents: ReadonlySet<string>): CarteLocale | null => {
+      for (let essais = 0; essais <= file.current.length; essais += 1) {
+        if (curseur.current >= file.current.length) {
+          file.current = fileDeCartes(jeu)
+          curseur.current = 0
+        }
+        const c = file.current[curseur.current]
+        curseur.current += 1
+        if (c === undefined) return null
+        if (!versosPresents.has(c.verso)) return c
+      }
+      return null
+    },
+    [jeu],
+  )
+
+  /**
+   * Pose la question à partir des bulles présentes.
+   *
+   * C'est le renversement demandé : la question ne choisit plus ses réponses,
+   * ce sont les réponses à l'écran qui décident de la question. On évite de
+   * redemander la carte qu'on vient de traiter tant qu'une autre est possible.
+   */
+  const poserQuestion = useCallback((presentes: readonly Bulle[], eviter?: string) => {
+    const possibles = presentes.filter((b) => b.carte.id !== eviter)
+    const parmi = possibles.length > 0 ? possibles : presentes
+    const choisie = parmi[Math.floor(Math.random() * parmi.length)]
+    if (choisie === undefined) return
+    premierEssaiFait.current = false
+    setCarte(choisie.carte)
+  }, [])
+
+  // ── Démarrage ────────────────────────────────────────────────────────────
+  function demarrer() {
+    file.current = fileDeCartes(jeu)
+    curseur.current = 0
+    compteurCle.current = 0
+
+    const versos = new Set<string>()
+    const neuves: Bulle[] = []
+    for (let k = 0; k < REGLES.BLAST_BULLES; k += 1) {
+      const c = piocher(versos)
+      if (c === null) break
+      versos.add(c.verso)
+      compteurCle.current += 1
+      neuves.push({
+        cle: `b${compteurCle.current}`,
+        carte: c,
         x: 0,
         y: 0,
-        vx: Math.cos(angle) * v,
-        vy: Math.sin(angle) * v,
-        largeur: 0,
-        hauteur: 0,
-      }
-    })
+        vx: 0,
+        vy: 0,
+        taille: 0,
+        posee: false,
+      })
+    }
 
     etatBulles.current = neuves
     refBulles.current.clear()
-    premierEssaiFait.current = false
-    setCarte(suivante)
+    scoreRef.current = 0
+    finSerie.current = performance.now() + REGLES.BLAST_DUREE_SERIE_MS
+    if (refCanon.current !== null) refCanon.current.style.transform = `rotate(${ANGLE_REPOS}deg)`
+    setScore(0)
+    setReussies(0)
+    setVies(REGLES.BLAST_VIES)
+    setFlash(null)
+    setEnVol(false)
     setBulles(neuves)
-    setEclatees([])
-    setPhase('visee')
-  }, [jeu, reussies])
+    poserQuestion(neuves)
+    setPhase('jeu')
+  }
 
-  // ── Placement initial, une fois les bulles mesurables ────────────────────
-  // Dépend des bulles et NON de la phase : une erreur ramène en « visée », et
-  // sur `phase` cet effet redistribuerait les bulles au hasard à chaque essai
-  // raté — le joueur perdrait de vue celles qu'il vient d'éliminer.
+  // ── Mesure, texte et mise en place des bulles neuves ─────────────────────
   useEffect(() => {
     const arene = refArene.current
     if (arene === null) return
-    // Le canon repart à la verticale à chaque question : laissé pointé sur la
-    // bulle du tour précédent, il désignerait une cible qui n'existe plus.
-    if (refCanon.current !== null) refCanon.current.style.transform = `rotate(${ANGLE_REPOS}deg)`
-
     const largeur = arene.clientWidth
     const hauteur = arene.clientHeight - ZONE_CANON
 
-    etatBulles.current.forEach((b, k) => {
+    for (const b of etatBulles.current) {
+      if (b.posee) continue
       const el = refBulles.current.get(b.cle)
-      if (el === undefined) return
-      b.largeur = el.offsetWidth
-      b.hauteur = el.offsetHeight
-      // Une bulle par quadrant : un tirage purement aléatoire les empile.
-      const colonne = k % 2
-      const ligne = Math.floor(k / 2)
-      const caseL = Math.max(0, largeur / 2 - b.largeur)
-      const caseH = Math.max(0, hauteur / 2 - b.hauteur)
-      b.x = colonne * (largeur / 2) + Math.random() * caseL
-      b.y = ligne * (hauteur / 2) + Math.random() * caseH
-      el.style.transform = `translate(${b.x.toFixed(1)}px, ${b.y.toFixed(1)}px)`
-    })
-  }, [bulles])
+      if (el === undefined) continue
+      b.taille = el.offsetWidth
+      ajusterTexte(el)
+
+      // Tirage par rejet : on cherche une place qui ne chevauche personne.
+      // Après quarante essais on accepte la dernière — les chocs de la boucle
+      // d'animation démêleront le tas en une fraction de seconde.
+      const maxX = Math.max(0, largeur - b.taille)
+      const maxY = Math.max(0, hauteur - b.taille)
+      let x = 0
+      let y = 0
+      for (let essai = 0; essai < 40; essai += 1) {
+        x = Math.random() * maxX
+        y = Math.random() * maxY
+        const libre = etatBulles.current.every((autre) => {
+          if (autre === b || !autre.posee) return true
+          const dx = autre.x - x
+          const dy = autre.y - y
+          return dx * dx + dy * dy >= b.taille * b.taille
+        })
+        if (libre) break
+      }
+      b.x = x
+      b.y = y
+
+      const v = vitesse(Math.floor(reussies / REGLES.BLAST_CARTES_PAR_NIVEAU) + 1)
+      const angle = Math.random() * Math.PI * 2
+      b.vx = Math.cos(angle) * v
+      b.vy = Math.sin(angle) * v
+      b.posee = true
+      el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`
+    }
+  }, [bulles, reussies])
+
+  // ── Chronomètre de la série ──────────────────────────────────────────────
+  // Une minuterie et non `requestAnimationFrame` : le temps doit s'écouler même
+  // quand l'onglet passe en arrière-plan, sans quoi il suffirait de changer
+  // d'onglet pour suspendre la série.
+  useEffect(() => {
+    if (phase !== 'jeu') return
+    const battre = () => {
+      const reste = Math.max(0, finSerie.current - performance.now())
+      const jauge = refChrono.current
+      if (jauge !== null) {
+        jauge.style.width = `${((reste / REGLES.BLAST_DUREE_SERIE_MS) * 100).toFixed(1)}%`
+        jauge.className =
+          reste <= URGENCE_MS ? 'blast-chrono-reste blast-chrono-urgence' : 'blast-chrono-reste'
+      }
+      if (refChiffre.current !== null) refChiffre.current.textContent = (reste / 1000).toFixed(1)
+      if (reste <= 0) terminer()
+    }
+    battre()
+    const id = window.setInterval(battre, 100)
+    return () => window.clearInterval(id)
+  }, [phase, terminer])
 
   // ── Le canon suit le pointeur ────────────────────────────────────────────
   // L'angle est écrit directement dans le style, coalescé par
@@ -245,7 +359,7 @@ export function Blast({
   // qu'une image, et un rendu React par mouvement de souris achèverait les
   // téléphones les plus anciens du parc.
   useEffect(() => {
-    if (phase === 'attente' || phase === 'termine') return
+    if (phase !== 'jeu') return
     const arene = refArene.current
     if (arene === null) return
 
@@ -272,34 +386,11 @@ export function Blast({
     }
   }, [phase])
 
-  // ── Rotation de l'écran ──────────────────────────────────────────────────
-  // En mouvement normal, la boucle d'animation raccroche les bulles au cadre
-  // à l'image suivante. En mouvement réduit il n'y a pas de boucle : sans ce
-  // rattrapage, un téléphone tourné en portrait laisserait une bulle hors de
-  // l'arène, donc hors d'atteinte, jusqu'à la question suivante.
-  useEffect(() => {
-    const recadrer = () => {
-      const arene = refArene.current
-      if (arene === null) return
-      const maxLargeur = arene.clientWidth
-      const maxHauteur = arene.clientHeight - ZONE_CANON
-      for (const b of etatBulles.current) {
-        const el = refBulles.current.get(b.cle)
-        if (el === undefined) continue
-        b.x = Math.min(Math.max(0, b.x), Math.max(0, maxLargeur - b.largeur))
-        b.y = Math.min(Math.max(0, b.y), Math.max(0, maxHauteur - b.hauteur))
-        el.style.transform = `translate(${b.x.toFixed(1)}px, ${b.y.toFixed(1)}px)`
-      }
-    }
-    window.addEventListener('resize', recadrer)
-    return () => window.removeEventListener('resize', recadrer)
-  }, [])
-
-  // ── Flottement des bulles ────────────────────────────────────────────────
+  // ── Flottement et chocs ──────────────────────────────────────────────────
   useEffect(() => {
     // Le vol du boulet fige les bulles : un boulet qui poursuit une cible
-    // mobile rate visiblement son coup alors que le verdict, lui, est déjà pris.
-    if (phase !== 'visee' || reduit) return
+    // mobile rate visiblement son coup alors que le verdict est déjà pris.
+    if (phase !== 'jeu' || enVol || reduit) return
     const arene = refArene.current
     if (arene === null) return
 
@@ -315,14 +406,14 @@ export function Blast({
       dernier = t
       const largeur = arene.clientWidth
       const hauteur = arene.clientHeight - ZONE_CANON
+      const vivantes = etatBulles.current
 
-      for (const b of etatBulles.current) {
-        const el = refBulles.current.get(b.cle)
-        if (el === undefined) continue
+      for (const b of vivantes) {
+        if (!b.posee) continue
         b.x += b.vx * dt
         b.y += b.vy * dt
-        const maxX = Math.max(0, largeur - b.largeur)
-        const maxY = Math.max(0, hauteur - b.hauteur)
+        const maxX = Math.max(0, largeur - b.taille)
+        const maxY = Math.max(0, hauteur - b.taille)
         if (b.x <= 0) {
           b.x = 0
           b.vx = Math.abs(b.vx)
@@ -337,6 +428,46 @@ export function Blast({
           b.y = maxY
           b.vy = -Math.abs(b.vy)
         }
+      }
+
+      // Chocs élastiques. Toutes les bulles ayant le même diamètre, donc la
+      // même masse, un choc se résout en échangeant les composantes normales
+      // des vitesses — inutile de sortir la formule générale.
+      for (let i = 0; i < vivantes.length; i += 1) {
+        const a = vivantes[i]
+        if (a === undefined || !a.posee) continue
+        for (let j = i + 1; j < vivantes.length; j += 1) {
+          const b = vivantes[j]
+          if (b === undefined || !b.posee) continue
+          const rayon = (a.taille + b.taille) / 2
+          const dx = b.x - a.x
+          const dy = b.y - a.y
+          const d2 = dx * dx + dy * dy
+          if (d2 >= rayon * rayon || d2 === 0) continue
+          const d = Math.sqrt(d2)
+          const nx = dx / d
+          const ny = dy / d
+          // Séparation à parts égales, sinon les deux bulles restent collées
+          // et se renvoient la balle à chaque image.
+          const chevauchement = (rayon - d) / 2
+          a.x -= nx * chevauchement
+          a.y -= ny * chevauchement
+          b.x += nx * chevauchement
+          b.y += ny * chevauchement
+          const va = a.vx * nx + a.vy * ny
+          const vb = b.vx * nx + b.vy * ny
+          if (va - vb <= 0) continue // elles s'éloignent déjà
+          const echange = va - vb
+          a.vx -= echange * nx
+          a.vy -= echange * ny
+          b.vx += echange * nx
+          b.vy += echange * ny
+        }
+      }
+
+      for (const b of vivantes) {
+        const el = refBulles.current.get(b.cle)
+        if (el === undefined || !b.posee) continue
         el.style.transform = `translate(${b.x.toFixed(1)}px, ${b.y.toFixed(1)}px)`
       }
       image = requestAnimationFrame(pas)
@@ -347,56 +478,85 @@ export function Blast({
       vivant = false
       cancelAnimationFrame(image)
     }
-  }, [phase, bulles, reduit])
+  }, [phase, bulles, enVol, reduit])
 
-  const conclure = useCallback(
+  // ── Résolution d'un tir ──────────────────────────────────────────────────
+  const resoudre = useCallback(
     (b: Bulle) => {
+      const juste = carte !== null && b.carte.id === carte.id
       if (carte !== null && !premierEssaiFait.current) {
         premierEssaiFait.current = true
-        // Reconnaissance, jamais rappel libre : voir le parti pris 1 en tête
-        // de fichier. C'est le domaine qui refuse la maîtrise, pas cet appel.
-        enregistrerReponse(jeu.id, carte.id, b.correcte, false)
+        // Reconnaissance, jamais rappel libre : voir le parti pris 1.
+        enregistrerReponse(jeu.id, carte.id, juste, false)
       }
-      if (b.correcte) {
-        setScore((s) => s + REGLES.BLAST_POINTS_PAR_CARTE * niveau)
-        setReussies((n) => n + 1)
-        setPhase('verdict')
+      setFlash({ cle: b.cle, juste })
+      setEnVol(false)
+
+      if (!juste) {
+        const restantes = vies - 1
+        setVies(restantes)
+        window.setTimeout(() => {
+          setFlash(null)
+          if (restantes <= 0) terminer()
+        }, FLASH_FAUX_MS)
         return
       }
-      // La bulle fausse reste crevée et la question continue : c'est le seul
-      // moyen d'arriver à voir la bonne réponse, puisque rien ne la révèle.
-      setEclatees((e) => [...e, b.cle])
-      setVies((v) => v - 1)
-      setPhase('rate')
+
+      setScore((s) => s + REGLES.BLAST_POINTS_PAR_CARTE * niveau)
+      setReussies((n) => n + 1)
+      // La bulle touchée cède la place à un mot neuf ; les quatre autres
+      // restent, et la question suivante se choisit parmi elles.
+      window.setTimeout(() => {
+        const restantes = etatBulles.current.filter((x) => x.cle !== b.cle)
+        const versos = new Set(restantes.map((x) => x.carte.verso))
+        const neuve = piocher(versos)
+        if (neuve !== null) {
+          compteurCle.current += 1
+          restantes.push({
+            cle: `b${compteurCle.current}`,
+            carte: neuve,
+            x: 0,
+            y: 0,
+            vx: 0,
+            vy: 0,
+            taille: 0,
+            posee: false,
+          })
+        }
+        refBulles.current.delete(b.cle)
+        etatBulles.current = restantes
+        setFlash(null)
+        setBulles(restantes)
+        poserQuestion(restantes, b.carte.id)
+      }, FLASH_JUSTE_MS)
     },
-    [carte, jeu, niveau],
+    [carte, jeu, niveau, vies, piocher, poserQuestion, terminer],
   )
 
   function tirer(b: Bulle) {
-    if (phase !== 'visee' || eclatees.includes(b.cle)) return
+    if (phase !== 'jeu' || enVol || flash !== null) return
     const arene = refArene.current
     const canon = refCanon.current
     const boulet = refBoulet.current
     if (arene === null) return
 
-    // Le canon vise le centre de la bulle depuis la bouche, au bas de l'arène.
-    // Le pointeur y est déjà, mais le viser explicitement couvre le tactile,
-    // où aucun `pointermove` ne précède le tir.
+    // Le canon vise le centre de la bulle. Le pointeur y est déjà, mais viser
+    // explicitement couvre le tactile, où aucun `pointermove` ne précède le tir.
     const vivante = etatBulles.current.find((x) => x.cle === b.cle) ?? b
     const departX = arene.clientWidth / 2
     const departY = arene.clientHeight - ZONE_CANON / 2
-    const cibleX = vivante.x + vivante.largeur / 2
-    const cibleY = vivante.y + vivante.hauteur / 2
+    const cibleX = vivante.x + vivante.taille / 2
+    const cibleY = vivante.y + vivante.taille / 2
     if (canon !== null) {
       canon.style.transform = `rotate(${angleVers(arene, cibleX, cibleY).toFixed(1)}deg)`
     }
 
     if (reduit || boulet === null) {
-      conclure(vivante)
+      resoudre(vivante)
       return
     }
 
-    setPhase('tir')
+    setEnVol(true)
     boulet.style.opacity = '1'
     boulet.style.transform = `translate(${departX.toFixed(1)}px, ${departY.toFixed(1)}px)`
 
@@ -411,45 +571,9 @@ export function Blast({
         return
       }
       boulet.style.opacity = '0'
-      conclure(vivante)
+      resoudre(vivante)
     }
     requestAnimationFrame(voler)
-  }
-
-  const terminer = useCallback(() => {
-    enregistrerScore(jeu.id, score)
-    setRecord(meilleurScore(jeu.id))
-    setPhase('termine')
-  }, [jeu, score])
-
-  // ── Après une bonne réponse : question suivante ──────────────────────────
-  useEffect(() => {
-    if (phase !== 'verdict') return
-    const id = window.setTimeout(lancerQuestion, VERDICT_MS)
-    return () => window.clearTimeout(id)
-  }, [phase, lancerQuestion])
-
-  // ── Après un essai raté : on rend la main sur la MÊME question ───────────
-  useEffect(() => {
-    if (phase !== 'rate') return
-    const id = window.setTimeout(() => {
-      if (vies <= 0) {
-        terminer()
-        return
-      }
-      setPhase('visee')
-    }, RATE_MS)
-    return () => window.clearTimeout(id)
-  }, [phase, vies, terminer])
-
-  function demarrer() {
-    file.current = fileDeCartes(jeu)
-    curseur.current = 0
-    setScore(0)
-    setReussies(0)
-    setVies(REGLES.BLAST_VIES)
-    if (refCanon.current !== null) refCanon.current.style.transform = `rotate(${ANGLE_REPOS}deg)`
-    lancerQuestion()
   }
 
   if (phase === 'attente') {
@@ -460,8 +584,9 @@ export function Blast({
             allemand, « Leben » et « Stufe » s'écrivent avec une majuscule, et
             un `toLowerCase()` sur un message d'interface les rendrait fautifs. */}
         <p className="petit doux">
-          {m.blast.vies} : {REGLES.BLAST_VIES} · {m.blast.niveau} :{' '}
-          {REGLES.BLAST_CARTES_PAR_NIVEAU} {m.blast.reussies}
+          {m.etude.temps} : {(REGLES.BLAST_DUREE_SERIE_MS / 1000).toFixed(0)} s · {m.blast.vies} :{' '}
+          {REGLES.BLAST_VIES} · {m.blast.niveau} : {REGLES.BLAST_CARTES_PAR_NIVEAU}{' '}
+          {m.blast.reussies}
           {record !== undefined ? (
             <>
               {' · '}
@@ -509,20 +634,15 @@ export function Blast({
     )
   }
 
-  const verdictRendu = phase === 'verdict'
-
   return (
     <>
       <div className="entre">
         <p className="petit doux" style={{ margin: 0 }}>
           {m.blast.niveau} <strong>{niveau}</strong> · {m.blast.score}{' '}
-          <strong className="mono">{score}</strong>
-          {record !== undefined ? (
-            <span className="tres-petit">
-              {' '}
-              · {m.blast.meilleurScore} {record}
-            </span>
-          ) : null}
+          <strong className="mono">{score}</strong> · {m.etude.temps}{' '}
+          <strong className="mono">
+            <span ref={refChiffre}>{(REGLES.BLAST_DUREE_SERIE_MS / 1000).toFixed(1)}</span> s
+          </strong>
         </p>
         <p className="petit doux" style={{ margin: 0 }}>
           {m.blast.vies} <strong>{Math.max(0, vies)}</strong>
@@ -536,6 +656,10 @@ export function Blast({
         </p>
       </div>
 
+      <div className="blast-chrono" aria-hidden="true">
+        <div className="blast-chrono-reste" ref={refChrono} />
+      </div>
+
       {/* Pas de libellé au-dessus du mot : c'est le recto à traduire, pas une
           réponse, et l'écran d'attente a déjà énoncé la règle. */}
       <div className="blast-enonce" aria-live="polite">
@@ -546,26 +670,24 @@ export function Blast({
 
       <div className="blast-arene" ref={refArene}>
         {bulles.map((b) => {
-          // Une bulle fausse reste rouge et hors jeu jusqu'à la question
-          // suivante : c'est la trace de ce qui a déjà été éliminé.
-          const crevee = eclatees.includes(b.cle)
           let classe = 'blast-bulle'
-          if (crevee) classe = 'blast-bulle blast-bulle-fausse'
-          else if (verdictRendu && b.correcte) classe = 'blast-bulle blast-bulle-juste'
+          if (flash?.cle === b.cle) {
+            classe = flash.juste ? 'blast-bulle blast-bulle-juste' : 'blast-bulle blast-bulle-fausse'
+          }
           return (
             <button
               key={b.cle}
               type="button"
               className={classe}
               lang={jeu.langueVerso}
-              disabled={crevee || phase !== 'visee'}
+              disabled={enVol || flash !== null}
               ref={(el) => {
                 if (el === null) refBulles.current.delete(b.cle)
                 else refBulles.current.set(b.cle, el)
               }}
               onClick={() => tirer(b)}
             >
-              {b.texte}
+              <span className="blast-bulle-texte">{b.carte.verso}</span>
             </button>
           )
         })}

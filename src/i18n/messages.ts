@@ -154,7 +154,7 @@ const FR: Messages = {
   },
   blast: {
     intro:
-      "Le mot à traduire s'affiche en haut. Quatre bulles flottent en dessous et le canon suit votre souris : cliquez sur celle qui porte la bonne traduction, il tire dessus. Juste, elle éclate en vert et rapporte des points. Faux, elle vire au rouge, coûte une vie, et vous rejouez sur la même question jusqu'à trouver. Trois vies, et les bulles accélèrent.",
+      "Vingt secondes pour placer le plus de réponses possible. Cinq bulles flottent et rebondissent l'une sur l'autre, le mot à traduire s'affiche en haut, le canon suit votre souris : cliquez sur la bulle qui répond, il tire dessus. Juste, elle éclate et cède la place à un mot neuf ; les autres restent, et la question suivante porte sur l'une d'elles. Faux, la bulle vire au rouge, coûte une vie, et vous rejouez sur la même question jusqu'à trouver. Trois vies.",
     demarrer: 'Démarrer',
     niveau: 'Niveau',
     score: 'Score',
@@ -264,7 +264,7 @@ const DE: Messages = {
   },
   blast: {
     intro:
-      'Das Wort steht oben. Darunter schweben vier Blasen, und die Kanone folgt Ihrer Maus: Klicken Sie auf die mit der richtigen Uebersetzung, sie schiesst darauf. Richtig, die Blase platzt gruen und bringt Punkte. Falsch, sie wird rot, kostet ein Leben, und Sie spielen dieselbe Frage weiter, bis Sie die richtige finden. Drei Leben, und die Blasen werden schneller.',
+      'Zwanzig Sekunden fuer moeglichst viele Treffer. Fuenf Blasen schweben und prallen voneinander ab, das Wort steht oben, die Kanone folgt Ihrer Maus: Klicken Sie auf die Blase, die passt, sie schiesst darauf. Richtig, die Blase platzt und macht einem neuen Wort Platz; die anderen bleiben, und die naechste Frage betrifft eine davon. Falsch, die Blase wird rot, kostet ein Leben, und Sie spielen dieselbe Frage weiter, bis Sie die richtige finden. Drei Leben.',
     demarrer: 'Starten',
     niveau: 'Stufe',
     score: 'Punkte',
@@ -374,7 +374,7 @@ const IT: Messages = {
   },
   blast: {
     intro:
-      'La parola da tradurre appare in alto. Sotto fluttuano quattro bolle e il cannone segue il vostro mouse: cliccate su quella con la traduzione giusta, il cannone le spara addosso. Giusta, scoppia in verde e vale punti. Sbagliata, diventa rossa, costa una vita, e riprovate sulla stessa domanda finché non la trovate. Tre vite, e le bolle accelerano.',
+      'Venti secondi per piazzare più risposte possibile. Cinque bolle fluttuano e rimbalzano una sull\'altra, la parola da tradurre appare in alto, il cannone segue il vostro mouse: cliccate sulla bolla che risponde, il cannone le spara addosso. Giusta, scoppia e lascia il posto a una parola nuova; le altre restano, e la domanda seguente riguarda una di loro. Sbagliata, la bolla diventa rossa, costa una vita, e riprovate sulla stessa domanda finché non la trovate. Tre vite.',
     demarrer: 'Iniziare',
     niveau: 'Livello',
     score: 'Punteggio',
