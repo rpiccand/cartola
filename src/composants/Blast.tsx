@@ -18,8 +18,8 @@ import { melanger } from './melanger'
  * Mode blast (arcade).
  *
  * Cinq bulles de même taille flottent et s'entrechoquent dans l'arène, chacune
- * portant la traduction d'une carte. Le recto s'affiche en haut, le canon suit
- * le pointeur, et l'élève tire sur la bulle qui répond. La série dure vingt
+ * portant la traduction d'une carte. Le recto s'affiche en haut, l'arrosoir suit
+ * le pointeur, et l'élève arrose la bulle qui répond. La série dure vingt
  * secondes.
  *
  * Quatre partis pris, tous discutables et tous délibérés :
@@ -37,11 +37,11 @@ import { melanger } from './melanger'
  *    question suivante — la crever appauvrirait le vivier. Elle clignote en
  *    rouge, coûte une vie, et rien de plus.
  * 4. **Le mouvement réduit n'est pas un mouvement lent.** Sous
- *    `prefers-reduced-motion`, les bulles ne bougent pas, le boulet ne voyage
+ *    `prefers-reduced-motion`, les bulles ne bougent pas, la goutte ne voyage
  *    pas — seuls le chronomètre et le flash de couleur, qui portent le jeu,
  *    sont conservés.
  *
- * L'animation, le chronomètre et l'angle du canon écrivent directement dans le
+ * L'animation, le chronomètre et l'angle de la buse écrivent directement dans le
  * DOM, jamais dans un état React : soixante rendus par seconde condamneraient
  * les téléphones les plus anciens du parc, qui sont la cible annoncée.
  */
@@ -61,17 +61,17 @@ interface Bulle {
   posee: boolean
 }
 
-/** Hauteur réservée au canon au bas de l'arène, en pixels. */
-const ZONE_CANON = 64
-/** Durée du vol du boulet, en millisecondes. */
+/** Hauteur réservée à l'arrosoir au bas de l'arène, en pixels. */
+const ZONE_ARROSOIR = 64
+/** Durée du vol de la goutte, en millisecondes. */
 const VOL_MS = 240
 /** Durée du clignotement vert avant le remplacement de la bulle. */
 const FLASH_JUSTE_MS = 380
 /** Durée du clignotement rouge après une erreur. */
 const FLASH_FAUX_MS = 520
-/** Le canon repose à la verticale quand il ne vise rien. */
+/** La buse repose à la verticale quand elle ne vise rien. */
 const ANGLE_REPOS = 0
-/** Butée de rotation du fût, en degrés de part et d'autre de la verticale. */
+/** Butée de rotation de la buse, en degrés de part et d'autre de la verticale. */
 const ANGLE_MAXIMUM = 82
 /** Le chronomètre passe en alerte sous ce seuil, en millisecondes. */
 const URGENCE_MS = 5000
@@ -92,15 +92,16 @@ function vitesse(niveau: number): number {
 }
 
 /**
- * Angle du fût pour viser un point de l'arène, mesuré depuis la verticale et
- * dans le sens horaire — c'est ainsi que le fût est dessiné, pointe en haut.
+ * Angle de la buse pour viser un point de l'arène, mesuré depuis la verticale
+ * et dans le sens horaire — c'est ainsi que la buse est dessinée, ouverture
+ * vers le haut.
  *
- * La butée empêche le canon de se retourner vers le bas quand le pointeur
- * passe sous sa bouche : un canon pointé vers le sol tirerait vers le hors-jeu.
+ * La butée l'empêche de se retourner vers le bas quand le pointeur passe sous
+ * son embout : une buse pointée vers le sol arroserait le hors-jeu.
  */
 function angleVers(arene: HTMLDivElement, cibleX: number, cibleY: number): number {
   const departX = arene.clientWidth / 2
-  const departY = arene.clientHeight - ZONE_CANON / 2
+  const departY = arene.clientHeight - ZONE_ARROSOIR / 2
   const brut = (Math.atan2(cibleX - departX, departY - cibleY) * 180) / Math.PI
   return Math.min(ANGLE_MAXIMUM, Math.max(-ANGLE_MAXIMUM, brut))
 }
@@ -170,8 +171,8 @@ export function Blast({
   const curseur = useRef(0)
   const compteurCle = useRef(0)
   const refArene = useRef<HTMLDivElement>(null)
-  const refCanon = useRef<HTMLDivElement>(null)
-  const refBoulet = useRef<HTMLDivElement>(null)
+  const refArrosoir = useRef<HTMLDivElement>(null)
+  const refGoutte = useRef<HTMLDivElement>(null)
   const refChrono = useRef<HTMLDivElement>(null)
   const refChiffre = useRef<HTMLSpanElement>(null)
   const refBulles = useRef(new Map<string, HTMLButtonElement>())
@@ -276,7 +277,7 @@ export function Blast({
     refBulles.current.clear()
     scoreRef.current = 0
     finSerie.current = performance.now() + REGLES.BLAST_DUREE_SERIE_MS
-    if (refCanon.current !== null) refCanon.current.style.transform = `rotate(${ANGLE_REPOS}deg)`
+    if (refArrosoir.current !== null) refArrosoir.current.style.transform = `rotate(${ANGLE_REPOS}deg)`
     setScore(0)
     setReussies(0)
     setVies(REGLES.BLAST_VIES)
@@ -292,7 +293,7 @@ export function Blast({
     const arene = refArene.current
     if (arene === null) return
     const largeur = arene.clientWidth
-    const hauteur = arene.clientHeight - ZONE_CANON
+    const hauteur = arene.clientHeight - ZONE_ARROSOIR
 
     for (const b of etatBulles.current) {
       if (b.posee) continue
@@ -353,7 +354,7 @@ export function Blast({
     return () => window.clearInterval(id)
   }, [phase, terminer])
 
-  // ── Le canon suit le pointeur ────────────────────────────────────────────
+  // ── L'arrosoir suit le pointeur ──────────────────────────────────────────
   // L'angle est écrit directement dans le style, coalescé par
   // `requestAnimationFrame` : un `pointermove` peut arriver bien plus souvent
   // qu'une image, et un rendu React par mouvement de souris achèverait les
@@ -368,9 +369,9 @@ export function Blast({
 
     const appliquer = () => {
       image = 0
-      const canon = refCanon.current
-      if (canon === null || vise === null) return
-      canon.style.transform = `rotate(${angleVers(arene, vise.x, vise.y).toFixed(1)}deg)`
+      const arrosoir = refArrosoir.current
+      if (arrosoir === null || vise === null) return
+      arrosoir.style.transform = `rotate(${angleVers(arene, vise.x, vise.y).toFixed(1)}deg)`
     }
 
     const suivre = (e: PointerEvent) => {
@@ -388,8 +389,8 @@ export function Blast({
 
   // ── Flottement et chocs ──────────────────────────────────────────────────
   useEffect(() => {
-    // Le vol du boulet fige les bulles : un boulet qui poursuit une cible
-    // mobile rate visiblement son coup alors que le verdict est déjà pris.
+    // Le vol de la goutte fige les bulles : une goutte qui poursuit une cible
+    // mobile rate visiblement son but alors que le verdict est déjà pris.
     if (phase !== 'jeu' || enVol || reduit) return
     const arene = refArene.current
     if (arene === null) return
@@ -405,7 +406,7 @@ export function Blast({
       const dt = Math.min(t - dernier, 100) / 1000
       dernier = t
       const largeur = arene.clientWidth
-      const hauteur = arene.clientHeight - ZONE_CANON
+      const hauteur = arene.clientHeight - ZONE_ARROSOIR
       const vivantes = etatBulles.current
 
       for (const b of vivantes) {
@@ -480,7 +481,7 @@ export function Blast({
     }
   }, [phase, bulles, enVol, reduit])
 
-  // ── Résolution d'un tir ──────────────────────────────────────────────────
+  // ── Résolution d'un arrosage ─────────────────────────────────────────────
   const resoudre = useCallback(
     (b: Bulle) => {
       const juste = carte !== null && b.carte.id === carte.id
@@ -533,44 +534,45 @@ export function Blast({
     [carte, jeu, niveau, vies, piocher, poserQuestion, terminer],
   )
 
-  function tirer(b: Bulle) {
+  function arroser(b: Bulle) {
     if (phase !== 'jeu' || enVol || flash !== null) return
     const arene = refArene.current
-    const canon = refCanon.current
-    const boulet = refBoulet.current
+    const arrosoir = refArrosoir.current
+    const goutte = refGoutte.current
     if (arene === null) return
 
-    // Le canon vise le centre de la bulle. Le pointeur y est déjà, mais viser
-    // explicitement couvre le tactile, où aucun `pointermove` ne précède le tir.
+    // La buse vise le centre de la bulle. Le pointeur y est déjà, mais viser
+    // explicitement couvre le tactile, où aucun `pointermove` ne précède le
+    // geste.
     const vivante = etatBulles.current.find((x) => x.cle === b.cle) ?? b
     const departX = arene.clientWidth / 2
-    const departY = arene.clientHeight - ZONE_CANON / 2
+    const departY = arene.clientHeight - ZONE_ARROSOIR / 2
     const cibleX = vivante.x + vivante.taille / 2
     const cibleY = vivante.y + vivante.taille / 2
-    if (canon !== null) {
-      canon.style.transform = `rotate(${angleVers(arene, cibleX, cibleY).toFixed(1)}deg)`
+    if (arrosoir !== null) {
+      arrosoir.style.transform = `rotate(${angleVers(arene, cibleX, cibleY).toFixed(1)}deg)`
     }
 
-    if (reduit || boulet === null) {
+    if (reduit || goutte === null) {
       resoudre(vivante)
       return
     }
 
     setEnVol(true)
-    boulet.style.opacity = '1'
-    boulet.style.transform = `translate(${departX.toFixed(1)}px, ${departY.toFixed(1)}px)`
+    goutte.style.opacity = '1'
+    goutte.style.transform = `translate(${departX.toFixed(1)}px, ${departY.toFixed(1)}px)`
 
     const debut = performance.now()
     const voler = (t: number) => {
       const p = Math.min(1, (t - debut) / VOL_MS)
       const x = departX + (cibleX - departX) * p
       const y = departY + (cibleY - departY) * p
-      boulet.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`
+      goutte.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`
       if (p < 1) {
         requestAnimationFrame(voler)
         return
       }
-      boulet.style.opacity = '0'
+      goutte.style.opacity = '0'
       resoudre(vivante)
     }
     requestAnimationFrame(voler)
@@ -685,18 +687,20 @@ export function Blast({
                 if (el === null) refBulles.current.delete(b.cle)
                 else refBulles.current.set(b.cle, el)
               }}
-              onClick={() => tirer(b)}
+              onClick={() => arroser(b)}
             >
               <span className="blast-bulle-texte">{b.carte.verso}</span>
             </button>
           )
         })}
 
-        <div className="blast-boulet" ref={refBoulet} aria-hidden="true" />
+        <div className="blast-goutte" ref={refGoutte} aria-hidden="true">
+          <div className="blast-goutte-forme" />
+        </div>
 
-        <div className="blast-canon" role="img" aria-label={m.blast.canon}>
-          <div className="blast-canon-fut" ref={refCanon} />
-          <div className="blast-canon-socle" />
+        <div className="blast-arrosoir" role="img" aria-label={m.blast.arrosoir}>
+          <div className="blast-arrosoir-col" ref={refArrosoir} />
+          <div className="blast-arrosoir-socle" />
         </div>
       </div>
     </>

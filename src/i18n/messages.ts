@@ -63,8 +63,8 @@ export interface Messages {
     vies: string
     reussies: string
     partieTerminee: string
-    /** Nom accessible du canon, annoncé aux lecteurs d'écran. */
-    canon: string
+    /** Nom accessible de l'arrosoir, annoncé aux lecteurs d'écran. */
+    arrosoir: string
   }
   etude: {
     jeSais: string
@@ -147,14 +147,14 @@ const FR: Messages = {
     associer: 'Association',
     associerDesc: 'Relier les paires contre le chronomètre',
     blast: 'Blast',
-    blastDesc: 'Tirer sur la bulle qui porte la bonne traduction',
+    blastDesc: 'Arroser la bulle qui porte la bonne traduction',
     maitrise: 'Maîtrise',
     reinitialiser: 'Réinitialiser la progression',
     retour: 'Retour',
   },
   blast: {
     intro:
-      "Vingt secondes pour placer le plus de réponses possible. Cinq bulles flottent et rebondissent l'une sur l'autre, le mot à traduire s'affiche en haut, le canon suit votre souris : cliquez sur la bulle qui répond, il tire dessus. Juste, elle éclate et cède la place à un mot neuf ; les autres restent, et la question suivante porte sur l'une d'elles. Faux, la bulle vire au rouge, coûte une vie, et vous rejouez sur la même question jusqu'à trouver. Trois vies.",
+      "Vingt secondes pour placer le plus de réponses possible. Cinq bulles flottent et rebondissent l'une sur l'autre, le mot à traduire s'affiche en haut, l'arrosoir suit votre souris : cliquez sur la bulle qui répond, une goutte part l'éclater. Juste, elle cède la place à un mot neuf ; les autres restent, et la question suivante porte sur l'une d'elles. Faux, la bulle vire au rouge, coûte une vie, et vous rejouez sur la même question jusqu'à trouver. Trois vies.",
     demarrer: 'Démarrer',
     niveau: 'Niveau',
     score: 'Score',
@@ -162,7 +162,7 @@ const FR: Messages = {
     vies: 'Vies',
     reussies: 'bonnes réponses',
     partieTerminee: 'Partie terminée',
-    canon: 'Canon',
+    arrosoir: 'Arrosoir',
   },
   etude: {
     jeSais: 'Je sais',
@@ -257,14 +257,14 @@ const DE: Messages = {
     associer: 'Zuordnen',
     associerDesc: 'Paare gegen die Uhr verbinden',
     blast: 'Blast',
-    blastDesc: 'Auf die Blase mit der richtigen Uebersetzung schiessen',
+    blastDesc: 'Die Blase mit der richtigen Uebersetzung zerplatzen lassen',
     maitrise: 'Beherrschung',
     reinitialiser: 'Fortschritt zuruecksetzen',
     retour: 'Zurueck',
   },
   blast: {
     intro:
-      'Zwanzig Sekunden fuer moeglichst viele Treffer. Fuenf Blasen schweben und prallen voneinander ab, das Wort steht oben, die Kanone folgt Ihrer Maus: Klicken Sie auf die Blase, die passt, sie schiesst darauf. Richtig, die Blase platzt und macht einem neuen Wort Platz; die anderen bleiben, und die naechste Frage betrifft eine davon. Falsch, die Blase wird rot, kostet ein Leben, und Sie spielen dieselbe Frage weiter, bis Sie die richtige finden. Drei Leben.',
+      'Zwanzig Sekunden fuer moeglichst viele Treffer. Fuenf Blasen schweben und prallen voneinander ab, das Wort steht oben, die Giesskanne folgt Ihrer Maus: Klicken Sie auf die Blase, die passt, ein Tropfen laesst sie zerplatzen. Richtig, sie macht einem neuen Wort Platz; die anderen bleiben, und die naechste Frage betrifft eine davon. Falsch, die Blase wird rot, kostet ein Leben, und Sie spielen dieselbe Frage weiter, bis Sie die richtige finden. Drei Leben.',
     demarrer: 'Starten',
     niveau: 'Stufe',
     score: 'Punkte',
@@ -272,7 +272,7 @@ const DE: Messages = {
     vies: 'Leben',
     reussies: 'richtige Antworten',
     partieTerminee: 'Spiel vorbei',
-    canon: 'Kanone',
+    arrosoir: 'Giesskanne',
   },
   etude: {
     jeSais: 'Weiss ich',
@@ -367,14 +367,14 @@ const IT: Messages = {
     associer: 'Abbinamento',
     associerDesc: 'Collegare le coppie contro il tempo',
     blast: 'Blast',
-    blastDesc: 'Sparare alla bolla con la traduzione giusta',
+    blastDesc: 'Far scoppiare la bolla con la traduzione giusta',
     maitrise: 'Padronanza',
     reinitialiser: 'Azzerare i progressi',
     retour: 'Indietro',
   },
   blast: {
     intro:
-      'Venti secondi per piazzare più risposte possibile. Cinque bolle fluttuano e rimbalzano una sull\'altra, la parola da tradurre appare in alto, il cannone segue il vostro mouse: cliccate sulla bolla che risponde, il cannone le spara addosso. Giusta, scoppia e lascia il posto a una parola nuova; le altre restano, e la domanda seguente riguarda una di loro. Sbagliata, la bolla diventa rossa, costa una vita, e riprovate sulla stessa domanda finché non la trovate. Tre vite.',
+      "Venti secondi per piazzare più risposte possibile. Cinque bolle fluttuano e rimbalzano una sull'altra, la parola da tradurre appare in alto, l'annaffiatoio segue il vostro mouse: cliccate sulla bolla che risponde, una goccia la fa scoppiare. Giusta, lascia il posto a una parola nuova; le altre restano, e la domanda seguente riguarda una di loro. Sbagliata, la bolla diventa rossa, costa una vita, e riprovate sulla stessa domanda finché non la trovate. Tre vite.",
     demarrer: 'Iniziare',
     niveau: 'Livello',
     score: 'Punteggio',
@@ -382,7 +382,7 @@ const IT: Messages = {
     vies: 'Vite',
     reussies: 'risposte corrette',
     partieTerminee: 'Partita finita',
-    canon: 'Cannone',
+    arrosoir: 'Annaffiatoio',
   },
   etude: {
     jeSais: 'Lo so',

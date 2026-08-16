@@ -626,70 +626,78 @@ a:focus-visible {
   text-decoration: line-through;
 }
 
-.blast-boulet {
+/* La goutte est un couple d'éléments : l'enveloppe porte le déplacement, la
+   forme porte la rotation. Un seul élément ne suffirait pas — `transform` ne
+   se cumule pas entre deux règles, et la boucle de vol réécrit la translation
+   à chaque image, ce qui effacerait la rotation qui fait la pointe. */
+.blast-goutte {
   position: absolute;
   top: 0;
   left: 0;
-  width: 12px;
-  height: 12px;
-  margin: -6px 0 0 -6px;
-  border-radius: 999px;
-  background: var(--encre);
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
   opacity: 0;
   will-change: transform;
 }
 
-.blast-canon {
+/* Coin inférieur gauche laissé carré, puis rotation de 135° : ce coin arrive
+   en haut et devient la pointe de la goutte, dirigée vers sa cible. */
+.blast-goutte-forme {
+  width: 100%;
+  height: 100%;
+  border-radius: 50% 50% 50% 0;
+  background: var(--accent);
+  transform: rotate(135deg);
+}
+
+.blast-arrosoir {
   position: absolute;
   left: 50%;
   bottom: 0.5rem;
-  width: 56px;
+  width: 60px;
   height: 52px;
-  margin-left: -28px;
+  margin-left: -30px;
   pointer-events: none;
 }
 
-/* Le fût pivote autour de sa base, pointe en haut au repos : c'est ce qui
-   permet au composant de poser un angle mesuré depuis la verticale. */
-.blast-canon-fut {
+/* La buse pivote autour de sa base, ouverture en haut au repos : c'est ce qui
+   permet au composant de poser un angle mesuré depuis la verticale. Elle
+   s'évase vers le haut — un tube parfaitement droit se lisait comme un fût. */
+.blast-arrosoir-col {
   position: absolute;
   left: 50%;
-  bottom: 14px;
-  width: 14px;
-  height: 34px;
-  margin-left: -7px;
-  border-radius: 7px 7px 3px 3px;
-  background: var(--encre-douce);
+  bottom: 13px;
+  width: 18px;
+  height: 32px;
+  margin-left: -9px;
+  border-radius: 9px 9px 3px 3px;
+  background: linear-gradient(180deg, #4d90bf 0%, var(--accent) 55%, #17496b 100%);
   transform-origin: 50% 100%;
 }
 
-.blast-canon-socle {
+/* Le liseré clair au sommet lit comme l'ouverture d'où sort l'eau. */
+.blast-arrosoir-col::before {
+  content: '';
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  top: 3px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--accent-fond);
+  opacity: 0.75;
+}
+
+.blast-arrosoir-socle {
   position: absolute;
   left: 50%;
   bottom: 0;
-  width: 44px;
+  width: 46px;
   height: 20px;
-  margin-left: -22px;
-  border-radius: 22px 22px var(--rayon-petit) var(--rayon-petit);
+  margin-left: -23px;
+  border-radius: 23px 23px var(--rayon-petit) var(--rayon-petit);
   background: var(--encre);
-}
-
-.blast-chrono {
-  height: 6px;
-  margin-top: 0.6rem;
-  border-radius: 999px;
-  background: var(--trait);
-  overflow: hidden;
-}
-
-.blast-chrono-reste {
-  width: 100%;
-  height: 100%;
-  background: var(--accent);
-}
-
-.blast-chrono-urgence {
-  background: var(--rouge);
 }
 
 .blast-vies {
@@ -769,12 +777,12 @@ th {
 
   /* `transform` est exclu de la transition : la boucle d'animation le réécrit
      à chaque image, et une transition dessus ferait traîner les bulles d'un
-     cran derrière leur position réelle — le boulet manquerait sa cible. */
+     cran derrière leur position réelle — la goutte manquerait sa cible. */
   .blast-bulle {
     transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
   }
 
-  .blast-canon-fut {
+  .blast-arrosoir-col {
     transition: transform 160ms ease-out;
   }
 }
