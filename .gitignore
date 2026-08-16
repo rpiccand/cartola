@@ -1,0 +1,20 @@
+# Dépendances
+/node_modules
+
+# Construction Next.js
+/.next/
+/out/
+/build
+
+# TypeScript — regénérés à chaque construction
+*.tsbuildinfo
+next-env.d.ts
+
+# Environnement local. Cette vitrine n'a aucun secret, mais la règle vaut
+# d'être posée avant qu'un fichier .env n'apparaisse.
+.env*.local
+
+# Divers
+.DS_Store
+*.pem
+npm-debug.log*
